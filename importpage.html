@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Panel Management</title>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+    <div class="container">
+        <!-- Setup View -->
+        <div id="setupView" class="view active">
+            <h1>Interview Panel Setup</h1>
+
+            <div class="card">
+                <h2>Upload Students</h2>
+                <div class="upload-area" onclick="document.getElementById('csvFile').click()">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">Click to upload CSV file with student names</div>
+                    <div class="upload-hint">Each name should be on a new line</div>
+                    <input type="file" id="csvFile" accept=".csv" onchange="handleFileUpload(event)">
+                </div>
+                <div id="studentList"></div>
+            </div>
+
+            <div class="card">
+                <h2>Add Students Manually</h2>
+                <div class="form-group">
+                    <div class="input-with-button">
+                        <input type="text" id="manualStudentName" placeholder="Enter student name" onkeypress="event.key === 'Enter' && addManualStudent()">
+                        <button class="btn-primary btn-small" onclick="addManualStudent()">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Add Panel Members</h2>
+                <div class="form-group">
+                    <div class="input-with-button">
+                        <input type="text" id="panelMemberName" placeholder="Enter panel member name" onkeypress="event.key === 'Enter' && addPanelMember()">
+                        <button class="btn-primary btn-small" onclick="addPanelMember()">Add</button>
+                    </div>
+                </div>
+                <div id="panelMemberList"></div>
+            </div>
+
+            <button class="btn-success" onclick="goToConfig()">Start Interview</button>
+        </div>
+        
+    </div>
+
+    <script src="script.js"></script>
+        
+</body>
+</html>

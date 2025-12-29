@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Interview Progress</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="script.js" defer></script>
+<script src="progressscript.js" defer></script>
+
+<style>
+    /* small helper to position the refresh button above the table (right-aligned) */
+    .table-card {
+        position: relative;
+        padding-top: 1.25rem; /* allow space for the button visually */
+    }
+
+    .refresh {
+        position: absolute;
+        right: 1rem;
+        top: 0; /* sits just above the table area inside the card */
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        box-shadow: 0 1px 4px rgba(2,6,23,0.08);
+        background: white;
+        border: 1px solid #e6eefc;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .refresh svg {
+        width: 18px;
+        height: 18px;
+        fill: #475569;
+    }
+
+    /* ensure the table inside the card respects the importpage styles */
+    .card table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+</style>
+
+<script>
+    let dataToLoad;
+    function refreshTable() {
+        if (window.progressTracker && progressTracker.fetchData) {
+            var assignmentsData = progressTracker.fetchData();
+            dataToLoad = assignmentsData;
+            var firstKey = Object.keys(dataToLoad)[0];
+            const maxInterviews = Object.keys(dataToLoad[firstKey]).length;
+            progressTracker.clearExistingDOM();
+            progressTracker.renderHeader(maxInterviews);
+            progressTracker.renderTableBasedOnData(dataToLoad, maxInterviews);
+        } else {
+            location.reload();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+       refreshTable();
+    });
+</script>
+</head>
+
+<body>
+    <button onclick="progressTracker.goToConfigPage()" class="btn-secondary" style="margin:1rem;">  
+        Back to Interview Assignment</button>
+<div class="container">
+    <h1>Interview Progress</h1>
+
+    <div class="card" style="margin-top:1rem;">
+        <h2>Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-card green">
+                <div class="stat-value" id="count-done">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card yellow">
+                <div class="stat-value" id="count-inprogress">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-value" id="count-pending">0</div>
+                <div class="stat-label">Not Started</div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="form-group" style="display:flex;gap:0.5rem;align-items:center;justify-content:space-between;">
+            <!-- <div>
+                <label for="dataFile">Load inputs.json</label>
+                <div class="input-with-button" style="max-width:420px;">
+                    <input id="dataFile" type="file" accept="application/json" />
+                    <button id="importBtn" class="btn-primary btn-small" type="button">Import</button>
+                </div>
+                <small class="upload-hint">Or the app will fetch data from the configured source.</small>
+            </div> -->
+            <div style="margin-left:auto; display:flex; gap:0.5rem;">
+                <button id="downloadBtn" class="btn-secondary btn-small" type="button">Export</button>
+            </div>
+        </div>
+
+        <div class="table-card" style="margin-top:1rem;">
+            <!-- refresh button placed just above the table (right side) -->
+            <button class="refresh" title="Refresh table" onclick="refreshTable()" aria-label="Refresh table">
+                <!-- simple refresh SVG -->
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 0 1-9.9 1H5.08A7 7 0 0 0 12 6z"></path>
+                </svg>
+            </button>
+
+            <div class="overflow-x">
+                <table id="progress-table" role="table" aria-label="Interview progress table">
+                    <thead>
+                        <tr>
+                            <th class="header"> </th>
+                            <th class="header-span" id="addAfterTh" colspan="2">Faculty and Verdict</th>
+                            <th class="header"> </th>
+                        </tr>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Faculty Name</th>
+                            <th id="addAfterThSpan">Verdict</th>
+                            <th>Final Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- progressscript.js will populate rows here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        // simple export of currently loaded dataToLoad if present
+        const data = window.dataToLoad || [];
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'exported_inputs.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+</script>
+
+</body>
+</html>
