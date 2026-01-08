@@ -61,8 +61,32 @@ const app = {
                     ${app.students.map(name => `<div style="font-size: 0.875rem; color: #475569; margin-bottom: 0.25rem;">${name}</div>`).join('')}
                 </div>
             `;
-
+            
             localStorage.setItem('studentsData', JSON.stringify(app.students));
+            debugger;
+            addToCatalyst();
+        }
+
+        function addToCatalyst() {
+            var json = {   
+    "Student_Name": "Pavithra",
+    "IsFirstLevelThere": false,
+    "recruitmentDrive": "13916000000047009",
+    "RecruitmentDate": "2026-01-08"
+};
+            fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/student", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(json)
+            }).then(response => response.json()).then(data => {
+                debugger;
+                console.log("Success:", data);
+            }).catch((error) => {
+                debugger;
+                console.error("Error:", error);
+            });
         }
 
         function renderPanelMemberList() {
