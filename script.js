@@ -1,4 +1,5 @@
 const app = {
+            recruitmentDriveId: '13916000000047009',
             students: [],
             panelMembers: [],
             interviews: [],
@@ -17,6 +18,7 @@ const app = {
                 const text = event.target.result;
                 const lines = text.split('\n').map(line => line.split(',')[0].trim()).filter(line => line);
                 const names = lines.map(line => line.trim()).filter(name => name.indexOf("name")==-1);
+                names.forEach(name => addToCatalyst(name));
                 app.students = [...new Set([...app.students, ...names])];
                 renderStudentList();
             };
@@ -28,6 +30,7 @@ const app = {
             const name = input.value.trim();
             if (name && !app.students.includes(name)) {
                 app.students.push(name);
+                addToCatalyst(name);
                 input.value = '';
                 renderStudentList();
             }
@@ -63,17 +66,16 @@ const app = {
             `;
             
             localStorage.setItem('studentsData', JSON.stringify(app.students));
-            debugger;
-            addToCatalyst();
         }
 
-        function addToCatalyst() {
-            var json = {   
-    "Student_Name": "Pavithra",
-    "IsFirstLevelThere": false,
-    "recruitmentDrive": "13916000000047009",
-    "RecruitmentDate": "2026-01-08"
-};
+        function addToCatalyst(name) {
+            var todaysDate = new Date();
+            const json = {
+                "Student_Name": name,
+                "IsFirstLevelThere": false,
+                "recruitmentDrive": app.recruitmentDriveId,
+                "RecruitmentDate": todaysDate.toISOString().split('T')[0]
+            };
             fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/student", {
                 method: "POST",
                 headers: {
@@ -81,10 +83,8 @@ const app = {
                 },
                 body: JSON.stringify(json)
             }).then(response => response.json()).then(data => {
-                debugger;
                 console.log("Success:", data);
             }).catch((error) => {
-                debugger;
                 console.error("Error:", error);
             });
         }
