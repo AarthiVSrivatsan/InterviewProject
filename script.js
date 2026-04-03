@@ -24,7 +24,30 @@ const app = {
             };
             reader.readAsText(file);
         }
-
+        function addRecDrive() {
+            const input = document.getElementById('recDrive');
+            const name = input.value.trim();
+            if (name) {
+                var todaysDate = new Date();
+                const json = {
+                    "year": todaysDate.getFullYear(),
+                    "recruitment_name": name
+                };
+                fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/recruitment-drive", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(json)
+                }).then(response => response.json()).then(data => {
+                    console.log("Success:", data);
+                    app.recruitmentDriveId = data[0].RecruitmentDrive.ROWID; // assuming response contains the new recruitment drive ID
+                    alert('Recruitment Drive created successfully!');
+                }).catch((error) => {
+                    console.error("Error:", error);
+                });
+            }
+        }
         function addManualStudent() {
             const input = document.getElementById('manualStudentName');
             const name = input.value.trim();
@@ -41,6 +64,7 @@ const app = {
             const name = input.value.trim();
             if (name && !app.panelMembers.includes(name)) {
                 app.panelMembers.push(name);
+                addMemberToCatalyst(name);
                 input.value = '';
                 renderPanelMemberList();
             }
@@ -69,6 +93,29 @@ const app = {
         }
 
         function addToCatalyst(name) {
+            var todaysDate = new Date();
+            const json = {
+                "Student_Name": name,
+                "IsFirstLevelThere": false,
+                "recruitmentDrive": app.recruitmentDriveId,
+                "RecruitmentDate": todaysDate.toISOString().split('T')[0]
+            };
+            fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/student", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(json)
+            }).then(response => response.json()).then(data => {
+                console.log("Success:", data);
+                localStorage.setItem('studentsCatData', data);
+            }).catch((error) => {
+                console.error("Error:", error);
+            });
+        }
+
+
+        function addMemberToCatalyst(name) {
             var todaysDate = new Date();
             const json = {
                 "Student_Name": name,
@@ -172,6 +219,49 @@ function updateInterviewRound(student, roundId, newName, elem) {
     }
 
     app.assignments[student][roundId] = newName;
+    assignInterview(student, newName).then(result => {
+        console.log('Interview assignment updated:', result);
+        localStorage.setItem('interviewsCatData', result);
+    }).catch(error => {
+        console.error('Error updating interview assignment:', error);
+    });
+}
+
+async function assignInterview(studentName, facName){
+    studentsCatData = localStorage.getItem('studentsCatData');
+    facData = localStorage.getItem('panelMembersCatData');
+    var selectedStudent = null;
+    var selectedFac = null;
+    for(var i = 0; i < studentsCatData.length; i++){
+        if(studentsCatData[i].Student_Name === studentName){
+            selectedStudent = studentsCatData[i].ROWID;
+            break;
+        }   
+    }
+    for(var j = 0; j < facData.length; j++){
+        if(facData[j].Student_Name === facName){
+            selectedFac = facData[j].ROWID;
+            break;
+        }
+    }
+    const json = {
+                "student_id": selectedStudent,
+                "faculty_id": selectedFac,
+                "recruitment_drive_id": app.recruitmentDriveId,
+                "recruitment_date": new Date().toISOString().split('T')[0],
+                "is_school_head_interview": false
+            };
+    let res = await fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(json),
+  });
+
+  let result = await res.json();
+
+  return result;
 }
 function renderConfigView() {
     const thead = document.getElementById('configTableHead');
