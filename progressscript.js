@@ -33,10 +33,47 @@ progressTracker.updateColorCode = function(selectElem) {
             app.verdicts[studentName] = {};
         }
         app.verdicts[studentName][interviewID] = verdict;
+        interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : {};
+        var selectedStudent = progressTracker.fetchStudentDetails(studentName);
+        var selInterview = null;
+        for(var i = 0; i < interviewsCatData.length; i++){
+            if(interviewsCatData[i].student_id === selectedStudent){
+                selInterview = interviewsCatData[i].ROWID;
+                break;
+            }   
+        }
+        progressTracker.updateInterview(selInterview).then(result => {
+            console.log('Interview updated:', result);
+        }).catch(error => {
+            console.error('Error updating interview:', error);
+        });
         progressTracker.showCount();
     }
 }
-
+progressTracker.fetchStudentDetails = function(studentName){
+    var studentsCatData = localStorage.getItem('studentsCatData');
+    for(var i = 0; i < studentsCatData.length; i++){
+        if(studentsCatData[i].Student_Name === studentName){
+            return studentsCatData[i];
+        }
+    }
+    return null;
+}
+progressTracker.updateInterview = function(selInterview, verdict) {
+    var result;
+    const json = {
+                "interview_id": selInterview,
+                "verdict": verdict
+            };
+    result = fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview", {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(json),
+    }).then(res => res.json());
+  return result;
+}
 progressTracker.goToConfigPage = function() {
     localStorage.setItem('verdicts', JSON.stringify(app.verdicts));
     window.location.href = "interviewassign.html";
