@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
+    <div class="recPanel">
+        <div class="input-with-button">
+            <input type="text" id="recDrive" placeholder="Enter recruitment drive Name" onkeypress="event.key === 'Enter' && addRecDrive()">
+            <button class="btn-primary btn-small" onclick="addRecDrive()">Create Recruitment Drive</button>
+        </div>
+    </div>
     <div class="container">
         <!-- Setup View -->
         <div id="setupView" class="view active">
