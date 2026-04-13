@@ -62,13 +62,9 @@ const app = {
         function addPanelMember() {
             const input = document.getElementById('panelMemberName');
             const name = input.value.trim();
-            var isSchoolHead = false;
-            if(name == "Uma"){
-                isSchoolHead = true;
-            }
             if (name && !app.panelMembers.includes(name)) {
                 app.panelMembers.push(name);
-                addMemberToCatalyst(name, isSchoolHead);
+                addMemberToCatalyst(name);
                 input.value = '';
                 renderPanelMemberList();
             }
@@ -161,13 +157,25 @@ const app = {
         }
 
         function initializeConfig() {
-            app.students = app.students.length > 0 ? app.students : JSON.parse(localStorage.getItem('studentsData'));
+            app.students = app.students.length > 0 ? app.students : JSON.parse(localStorage.getItem('studentsData') || '[]');
             app.panelMembers = app.panelMembers.length > 0 ? app.panelMembers : JSON.parse(localStorage.getItem('panelMembersData') || '[]');
             if (app.students.length === 0 || app.panelMembers.length === 0) {
                 alert('Please upload students and add panel members');
                 return;
             }
 
+            // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
+            // restore them directly — don't wipe the faculty selections.
+            var savedAssignments = localStorage.getItem('assignmentsData');
+            var savedInterviews  = localStorage.getItem('interviewsData');
+
+            if (savedAssignments && savedInterviews) {
+                app.assignments = JSON.parse(savedAssignments);
+                app.interviews  = JSON.parse(savedInterviews);
+                return;   // already fully hydrated — nothing left to do
+            }
+
+            // Fresh session: build default interview rounds and empty assignment slots
             app.interviews = [
                 { id: '1', name: 'Interview-1', isHead: false },
                 { id: '2', name: 'Interview-2', isHead: false },
@@ -221,11 +229,6 @@ function updateInterviewRound(student, roundId, newName, elem) {
             return;
         }
     }
-    if(newName === "Uma"){
-        alert('Uma is assigned as the head interviewer and cannot be assigned to other rounds.');
-        elem.value = "";
-        return;
-    }
 
     app.assignments[student][roundId] = newName;
     assignInterview(student, newName).then(result => {
@@ -237,19 +240,19 @@ function updateInterviewRound(student, roundId, newName, elem) {
 }
 
 async function assignInterview(studentName, facName){
-    studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
-    facData = JSON.parse(localStorage.getItem('panelMembersCatData'));
+    studentsCatData = localStorage.getItem('studentsCatData');
+    facData = localStorage.getItem('panelMembersCatData');
     var selectedStudent = null;
     var selectedFac = null;
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].ZS28_Students.Student_Name === studentName){
-            selectedStudent = studentsCatData[i].ZS28_Students.ROWID;
+        if(studentsCatData[i].Student_Name === studentName){
+            selectedStudent = studentsCatData[i].ROWID;
             break;
         }   
     }
     for(var j = 0; j < facData.length; j++){
-        if(facData[j].Faculty.Name === facName){
-            selectedFac = facData[j].Faculty.ROWID;
+        if(facData[j].Student_Name === facName){
+            selectedFac = facData[j].ROWID;
             break;
         }
     }
