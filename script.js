@@ -273,7 +273,7 @@ function updateInterviewRound(student, roundId, newName, elem) {
     assignInterview(student, newName).then(result => {
         console.log('Interview assignment updated:', result);
         var finalResult = JSON.parse(localStorage.getItem('interviewsCatData'));
-        finalResult.push(result);
+        finalResult.push(result[0]);
         localStorage.setItem('interviewsCatData', JSON.stringify(finalResult));
     }).catch(error => {
         console.error('Error updating interview assignment:', error);
