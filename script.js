@@ -316,6 +316,7 @@ async function assignInterview(studentName, facName){
   return result;
 }
 function renderConfigView() {
+    var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     const thead = document.getElementById('configTableHead');
     const tbody = document.getElementById('configTableBody');
     app.interviews = app.interviews.length > 0 ? app.interviews : JSON.parse(localStorage.getItem('interviewsData') || '[]');
@@ -354,9 +355,26 @@ function renderConfigView() {
                 return `<option value="${member}" ${selected}>${member}</option>`;
             }).join('');
             var facName = (app.assignments && app.assignments[student] && app.assignments[student][facIdx]) ? app.assignments[student][facIdx] : '';
-            var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
             //var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
-            var thisVerdict = (verdicts[student] && verdicts[student][interview.id]) ? verdicts[student][interview.id] : '';    
+            //var thisVerdict = "C";
+
+            var thisVerdict = '';
+            var ivEntry = interviewsCatData.find(function(entry) {
+                var iv = entry.ZS28_Interviews || entry;
+                return String(iv.Student) === String(
+                    (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
+                        .find(function(s) { return (s.ZS28_Students || s).Student_Name === student; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
+                ) && Object.values(app.assignments[student] || {}).includes(
+                    (JSON.parse(localStorage.getItem('panelMembersCatData') || '[]')
+                        .find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); }) || {Faculty:{Name:''}}).Faculty.Name
+                );
+            });
+            if (ivEntry) {
+                var ivData = ivEntry.ZS28_Interviews || ivEntry;
+                if (ivData.Verdict && ivData.Verdict !== '' && ivData.Verdict !== 'undefined') {
+                    thisVerdict = ivData.Verdict;
+                }
+            }
             initialIdx++;
             if (thisVerdict != "") {
             
