@@ -37,12 +37,13 @@ progressTracker.updateColorCode = function(selectElem) {
         var selectedStudent = progressTracker.fetchStudentDetails(studentName);
         var selInterview = null;
         for(var i = 0; i < interviewsCatData.length; i++){
-            if(interviewsCatData[i].student_id === selectedStudent){
-                selInterview = interviewsCatData[i].ROWID;
+            var iv = interviewsCatData[i].ZS28_Interviews || interviewsCatData[i];
+            if(String(iv.Student) === String(selectedStudent)){
+                selInterview = iv.ROWID;
                 break;
-            }   
+            }
         }
-        progressTracker.updateInterview(selInterview).then(result => {
+        progressTracker.updateInterview(selInterview, verdict).then(result => {
             console.log('Interview updated:', result);
         }).catch(error => {
             console.error('Error updating interview:', error);
