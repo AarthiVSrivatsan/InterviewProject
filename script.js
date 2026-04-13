@@ -115,15 +115,15 @@ const app = {
         }
 
 
-        function addMemberToCatalyst(name) {
+        function addMemberToCatalyst(name, isSchoolHead) {
             var todaysDate = new Date();
             const json = {
-                "Student_Name": name,
-                "IsFirstLevelThere": false,
+                "name": name,
+                "isSchoolHead": false,
                 "recruitmentDrive": app.recruitmentDriveId,
                 "RecruitmentDate": todaysDate.toISOString().split('T')[0]
             };
-            fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/student", {
+            fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/faculty", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
