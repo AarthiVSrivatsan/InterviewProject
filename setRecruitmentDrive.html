@@ -216,12 +216,12 @@ async function loadDrive() {
 
         interviewsCatData.forEach(function(ivtemp) {
             iv = ivtemp.ZS28_Interviews;
-            var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
-            var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
+            var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === String(iv.student_id); });
+            var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.faculty_id); });
             if (!stuObj) return;
 
-            var sName = stuObj.Student_Name;
-            var fName = facObj ? facObj.name : '';
+            var sName = stuObj.ZS28_Students.Student_Name;
+            var fName = facObj ? facObj.Faculty.Name : '';
             var iId   = String(iv.ROWID);
 
             // assignments map: { studentName: { interviewRowId: facultyName } }
