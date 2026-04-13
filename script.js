@@ -243,7 +243,7 @@ async function assignInterview(studentName, facName){
         }   
     }
     for(var j = 0; j < facData.length; j++){
-        if(facData[j].Student_Name === facName){
+        if(facData[j].Name === facName){
             selectedFac = facData[j].ROWID;
             break;
         }
