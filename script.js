@@ -325,13 +325,13 @@ function renderConfigView() {
                         </td>`;
             }
 
+            var facIdx = Object.keys(app.assignments[student])[idx];
             // helper to build options list
             const options = app.panelMembers.map(member => {
-                const selected = (app.assignments[student] && Object.keys(app.assignments[student])[idx] === member) ? 'selected' : '';
+                const selected = (app.assignments[student] && app.assignments[student][facIdx] === member) ? 'selected' : '';
                 return `<option value="${member}" ${selected}>${member}</option>`;
             }).join('');
-
-            var facName = (app.assignments && app.assignments[student] && Object.keys(app.assignments[student])[idx]) ? Object.keys(app.assignments[student])[idx] : '';
+            var facName = (app.assignments && app.assignments[student] && app.assignments[student][facIdx]) ? app.assignments[student][facIdx] : '';
             var panelMemberList = JSON.parse(localStorage.getItem('panelMembersCatData'));
             var facNameToDisplay = panelMemberList.find((fac) => fac.Faculty.ROWID === facName) ? fac.Faculty.Name : '';
             var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
