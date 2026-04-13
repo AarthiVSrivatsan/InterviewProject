@@ -120,7 +120,7 @@ const app = {
             const json = {
                 "name": name,
                 "isSchoolHead": false,
-                "recruitmentDrive": app.recruitmentDriveId,
+                "RecruitmentDrive": app.recruitmentDriveId,
                 "RecruitmentDate": todaysDate.toISOString().split('T')[0]
             };
             fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/faculty", {
