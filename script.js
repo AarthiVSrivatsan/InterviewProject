@@ -177,12 +177,14 @@ const app = {
                 });
             });
            var catalystData = localStorage.getItem('interviewsCatData');
+            var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
+            var panelMembersCatData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
             if (catalystData) {
                 var interviewsCatData = JSON.parse(catalystData);
                 interviewsCatData.forEach(function(ivtemp) {
                     iv = ivtemp.ZS28_Interviews;
-                    var stuObj = app.students.find(function(s) { return String(s) === String(iv.student_id); });
-                    var facObj = app.panelMembers.find(function(f) { return String(f) === String(iv.faculty_id); });
+                    var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
+                    var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
                     if (!stuObj || !facObj) return;
 
                     var sName = stuObj;
