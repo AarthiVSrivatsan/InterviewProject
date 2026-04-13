@@ -176,7 +176,9 @@ const app = {
                     app.assignments[student][interview.id] = '';
                 });
             });
-           var catalystData = localStorage.getItem('interviewsCatData');
+            // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
+            // restore them directly — don't wipe the faculty selections.
+            var catalystData = localStorage.getItem('interviewsCatData');
             var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var panelMembersCatData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
             if (catalystData) {
@@ -187,8 +189,8 @@ const app = {
                     var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
                     if (!stuObj || !facObj) return;
 
-                    var sName = stuObj;
-                    var fName = facObj;
+                    var sName = stuObj.ZS28_Students.Student_Name;
+                    var fName = facObj.ZS28_Faculty.Name;
                     var iId   = String(iv.ROWID);
 
                     if (!app.assignments[sName]) app.assignments[sName] = {};
@@ -201,8 +203,6 @@ const app = {
                 app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
             }
             return;
-
-            
         }
 
         function addInterviewRound() {
@@ -290,9 +290,8 @@ async function assignInterview(studentName, facName){
     },
     body: JSON.stringify(json),
   });
-
   let result = await res.json();
-  localStorage.setItem('assignmentsData', JSON.stringify(app.assignments));
+
   return result;
 }
 function renderConfigView() {
