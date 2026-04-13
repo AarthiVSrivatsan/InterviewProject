@@ -169,13 +169,6 @@ const app = {
                 { id: '2', name: 'Interview-2', isHead: false },
                 { id: '3', name: 'Head Interview', isHead: true, interviewer: 'Uma' }
             ];
-
-            app.students.forEach(student => {
-                app.assignments[student] = {};
-                app.interviews.forEach(interview => {
-                    app.assignments[student][interview.id] = '';
-                });
-            });
             // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
             // restore them directly — don't wipe the faculty selections.
             var catalystData = localStorage.getItem('interviewsCatData');
@@ -195,6 +188,13 @@ const app = {
 
                     if (!app.assignments[sName]) app.assignments[sName] = {};
                     app.assignments[sName][iId] = fName;
+                });
+            }else{
+                app.students.forEach(student => {
+                app.assignments[student] = {};
+                    app.interviews.forEach(interview => {
+                        app.assignments[student][interview.id] = '';
+                    });
                 });
             }
 
