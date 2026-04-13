@@ -34,8 +34,8 @@ progressTracker.updateColorCode = function(selectElem) {
         var selInterview = null;
         for(var i = 0; i < interviewsCatData.length; i++){
             var iv = interviewsCatData[i].ZS28_Interviews || interviewsCatData[i];
-            if(String(iv.Student) === String(selectedStudent.ROWID)){
-                iv.verdict = verdict; 
+            if(String(iv.Student) === String(selectedStudent.ROWID) && String(iv.ROWID) === String(interviewID)){
+                iv.Verdict = verdict;   // also capital V to match the rest of the code
                 selInterview = iv.ROWID;
                 break;
             }
@@ -164,10 +164,16 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
                 var facultyName = interviews[facultyVerdicts[j]];
                 var verdict = "In Progress";
 
-                var ivEntry = interviewsCatData ? interviewsCatData.find(function(entry) {
-                            var iv = entry.ZS28_Interviews || entry;
-                            return String(iv.ROWID) === String(facultyVerdicts[j]);
-                        }) : null;
+                var ivEntry = interviewsCatData.find(function(entry) {
+                    var iv = entry.ZS28_Interviews || entry;
+                    var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
+                    var facObj = panelData.find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); });
+                    var facNameInEntry = facObj ? (facObj.Faculty||facObj).Name : '';
+                        return facNameInEntry === facultyName && String(iv.Student) === String(
+                            (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
+                                    .find(function(s) { return s.ZS28_Students.Student_Name === studentName; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
+                            );
+                    });
                 if (ivEntry) {
                     var ivData = ivEntry.ZS28_Interviews || ivEntry;
                     if (ivData.Verdict && ivData.Verdict !== '' && ivData.Verdict !== 'undefined') {
