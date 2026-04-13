@@ -62,9 +62,13 @@ const app = {
         function addPanelMember() {
             const input = document.getElementById('panelMemberName');
             const name = input.value.trim();
+            var isSchoolHead = false;
+            if(name == "Uma"){
+                isSchoolHead = true;
+            }
             if (name && !app.panelMembers.includes(name)) {
                 app.panelMembers.push(name);
-                addMemberToCatalyst(name);
+                addMemberToCatalyst(name, isSchoolHead);
                 input.value = '';
                 renderPanelMemberList();
             }
