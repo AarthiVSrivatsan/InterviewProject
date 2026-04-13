@@ -260,7 +260,7 @@ async function assignInterview(studentName, facName){
         }   
     }
     for(var j = 0; j < facData.length; j++){
-        if((facData[j].Faculty || facData[j]).name === facName){
+        if((facData[j].Faculty || facData[j]).Name === facName){
             selectedFac = (facData[j].Faculty || facData[j]).ROWID;
             break;
         }
