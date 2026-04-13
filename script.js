@@ -384,7 +384,7 @@ function renderConfigView() {
                     return String((f.Faculty || f).ROWID) === String(iv.Faculty);
                 });
                 var facultyName = (facultyObj && facultyObj.Faculty.Name) || '';
-                var assignedFaculty = (Object.values(app.assignments[student]) || {}).find(function(assignedFac) {
+                var assignedFaculty = Object.values(app.assignments[student] || {}).find(function(assignedFac) {
                     return assignedFac === facultyName;
                 });
                 if(assignedFaculty !== undefined || assignedFaculty !== ''){
