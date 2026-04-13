@@ -29,20 +29,19 @@ progressTracker.updateColorCode = function(selectElem) {
             tdElem.classList.remove("inprogress");
             tdElem.classList.add("done");
         }
-        if(!app.verdicts[studentName]){
-            app.verdicts[studentName] = {};
-        }
-        app.verdicts[studentName][interviewID] = verdict;
         interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : {};
         var selectedStudent = progressTracker.fetchStudentDetails(studentName);
         var selInterview = null;
         for(var i = 0; i < interviewsCatData.length; i++){
             var iv = interviewsCatData[i].ZS28_Interviews || interviewsCatData[i];
             if(String(iv.Student) === String(selectedStudent.ROWID)){
+                iv.verdict = verdict; 
                 selInterview = iv.ROWID;
                 break;
             }
         }
+        localStorage.setItem('interviewsCatData', JSON.stringify(interviewsCatData));
+
         progressTracker.updateInterview(selInterview, verdict).then(result => {
             console.log('Interview updated:', result);
         }).catch(error => {
@@ -76,7 +75,6 @@ progressTracker.updateInterview = function(selInterview, verdict) {
   return result;
 }
 progressTracker.goToConfigPage = function() {
-    localStorage.setItem('verdicts', JSON.stringify(app.verdicts));
     window.location.href = "interviewassign.html";
 }
 progressTracker.findHighestNumberOfInterviews = function(data) {
@@ -110,7 +108,7 @@ progressTracker.renderHeader = function(maxInterviews) {
     }
 }
 progressTracker.showCount = function() {
-    var verdicts = localStorage.getItem('verdicts') ? JSON.parse(localStorage.getItem('verdicts')) : {};
+    var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var assignments = localStorage.getItem('assignmentsData') ? JSON.parse(localStorage.getItem('assignmentsData')) : {};
     var inProgressStudents = 0;
     var yetToStartStudents = 0;
@@ -130,13 +128,23 @@ progressTracker.showCount = function() {
         }
     });
     var interviewsDone = 0;
-    Object.keys(verdicts).forEach(function(student) {
-        var interviews = verdicts[student];
+    Object.keys(assignments).forEach(function(student) {
         var maxInterviews = Object.keys(assignments[student]).length;
-        var completedInterviews = Object.keys(interviews).length;
-        if(maxInterviews == completedInterviews) {
-            interviewsDone = interviewsDone + 1;
-        }
+        var studentInterviews = interviewsCatData.filter(function(entry) {
+        var iv = entry.ZS28_Interviews || entry;
+        // match by faculty name stored in assignments
+        return Object.values(assignments[student]).includes(
+            (localStorage.getItem('panelMembersCatData') ? 
+                JSON.parse(localStorage.getItem('panelMembersCatData')) : [])
+            .find(function(f) { return String((f.Faculty||f).ROWID) === String((entry.ZS28_Interviews||entry).Faculty); })
+            ?.Faculty?.Name || ''
+        );
+    });
+    var completedCount = studentInterviews.filter(function(entry) {
+        var iv = entry.ZS28_Interviews || entry;
+        return iv.Verdict && iv.Verdict !== '' && iv.Verdict !== 'undefined' && iv.Verdict !== 'In Progress';
+    }).length;
+    if (completedCount === maxInterviews) interviewsDone++;
     });
     var completedStudents = interviewsDone;
     inProgressStudents = inProgressStudents - interviewsDone;
@@ -145,6 +153,7 @@ progressTracker.showCount = function() {
     document.querySelector('#count-pending').innerText = yetToStartStudents;
 }   
 progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
+    var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var studentAssignments = Object.keys(data).forEach(function(key) {
         var studentName = key;
         var interviews = data[key];
@@ -154,9 +163,16 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
             for(var j=0;j<facultyVerdicts.length;j++) {
                 var facultyName = interviews[facultyVerdicts[j]];
                 var verdict = "In Progress";
-                app.verdicts = localStorage.getItem('verdicts') ? JSON.parse(localStorage.getItem('verdicts')) : {};
-                if(app.verdicts[studentName] && app.verdicts[studentName][facultyVerdicts[j]]) {
-                    verdict = app.verdicts[studentName][facultyVerdicts[j]];
+
+                var ivEntry = interviewsCatData ? interviewsCatData.find(function(entry) {
+                            var iv = entry.ZS28_Interviews || entry;
+                            return String(iv.ROWID) === String(facultyVerdicts[j]);
+                        }) : null;
+                if (ivEntry) {
+                    var ivData = ivEntry.ZS28_Interviews || ivEntry;
+                    if (ivData.Verdict && ivData.Verdict !== '' && ivData.Verdict !== 'undefined') {
+                        verdict = ivData.Verdict;
+                    }
                 }
                 var domToAppend = progressTracker.FACULTY_VERDICT_TEMPLATE;
                 className = (verdict == "In Progress") ? "inprogress" : "done";
