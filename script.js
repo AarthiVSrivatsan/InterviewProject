@@ -206,8 +206,12 @@ const app = {
                     if (!app.assignments[sName]) app.assignments[sName] = {};
 
                     byStudent[sId].forEach(function(iv, idx) {
-                    var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
-                    app.assignments[sName][String(idx + 1)] = facObj ? facObj.Faculty.Name : '';
+                         var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
+                         app.assignments[sName][String(idx + 1)] = facObj ? facObj.Faculty.Name : '';
+
+                         if (iv.verdict && iv.verdict !== '' && iv.verdict !== 'undefined') {
+                            iv.verdict = iv.verdict;  // already there, just ensure it persists
+                        }
                     });
                 });
             } else {
