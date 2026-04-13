@@ -334,15 +334,13 @@ function renderConfigView() {
                 return `<option value="${member}" ${selected}>${member}</option>`;
             }).join('');
             var facName = (app.assignments && app.assignments[student] && app.assignments[student][facIdx]) ? app.assignments[student][facIdx] : '';
-            var panelMemberList = JSON.parse(localStorage.getItem('panelMembersCatData'));
-            var facNameToDisplay = panelMemberList.find((fac) => fac.Faculty.ROWID === facName) ? fac.Faculty.Name : '';
             var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
             var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
             initialIdx++;
             if (thisVerdict != "") {
             
                 return `<td>
-                            <select disabled value="${facNameToDisplay}" onchange='updateInterviewRound(${JSON.stringify(student)}, ${JSON.stringify(interview.id)}, this.value, this)'>
+                            <select disabled value="${facName}" onchange='updateInterviewRound(${JSON.stringify(student)}, ${JSON.stringify(interview.id)}, this.value, this)'>
                                 <option value="">Select Interviewer</option>
                                 ${options}
                             </select>
@@ -350,7 +348,7 @@ function renderConfigView() {
             }
 
             return `<td>
-                        <select value="${facNameToDisplay}" onchange='updateInterviewRound(${JSON.stringify(student)}, ${JSON.stringify(interview.id)}, this.value, this)'>
+                        <select value="${facName}" onchange='updateInterviewRound(${JSON.stringify(student)}, ${JSON.stringify(interview.id)}, this.value, this)'>
                             <option value="">Select Interviewer</option>
                             ${options}
                         </select>
