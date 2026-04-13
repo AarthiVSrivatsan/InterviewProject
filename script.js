@@ -232,8 +232,8 @@ function updateInterviewRound(student, roundId, newName, elem) {
 }
 
 async function assignInterview(studentName, facName){
-    studentsCatData = localStorage.getItem('studentsCatData');
-    facData = localStorage.getItem('panelMembersCatData');
+    studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
+    facData = JSON.parse(localStorage.getItem('panelMembersCatData'));
     var selectedStudent = null;
     var selectedFac = null;
     for(var i = 0; i < studentsCatData.length; i++){
