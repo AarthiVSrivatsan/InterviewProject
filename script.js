@@ -377,9 +377,7 @@ function renderConfigView() {
                     return String((f.Faculty || f).ROWID) === String(iv.Faculty);
                 });
                 var facultyName = (facultyObj && facultyObj.Faculty.Name) || '';
-                var assignedFacultyList = Object.values(app.assignments[student] || {});
-
-                return assignedFacultyList.includes(facultyName); 
+                return String(iv.Student) === String(studentId) &&app.assignments[student] &&app.assignments[student][facIdx] === facultyName;
             });
             if (ivEntry) {
                 var ivData = ivEntry.ZS28_Interviews || ivEntry;
