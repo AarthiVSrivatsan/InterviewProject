@@ -260,7 +260,7 @@ async function loadDrive() {
             '<small>' + studentNames.length + ' students \u00b7 ' + panelNames.length + ' faculty \u00b7 ' + interviewsCatData.length + ' interviews</small><br>' +
             '<small style="color:#059669;">Redirecting to progress page\u2026</small>'
         );
-        setTimeout(function() { window.location.href = 'progress.html'; }, 1200);
+        setTimeout(function() { window.location.href = 'interviewassign.html'; }, 1200);
 
     } catch (err) {
         document.querySelectorAll('.steps li.active').forEach(function(el) { el.className = 'failed'; });
