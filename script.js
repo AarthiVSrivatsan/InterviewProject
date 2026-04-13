@@ -229,30 +229,35 @@ function updateInterviewRound(student, roundId, newName, elem) {
             return;
         }
     }
+    if(newName === "Uma"){
+        alert('Uma can only be assigned to the Head Interview round. Please choose a different interviewer.');
+        elem.value = "";
+        return;
+    }
 
     app.assignments[student][roundId] = newName;
     assignInterview(student, newName).then(result => {
         console.log('Interview assignment updated:', result);
-        localStorage.setItem('interviewsCatData', result);
+        localStorage.setItem('interviewsCatData', JSON.stringify(result));
     }).catch(error => {
         console.error('Error updating interview assignment:', error);
     });
 }
 
 async function assignInterview(studentName, facName){
-    studentsCatData = localStorage.getItem('studentsCatData');
-    facData = localStorage.getItem('panelMembersCatData');
+    studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
+    facData = JSON.parse(localStorage.getItem('panelMembersCatData'));
     var selectedStudent = null;
     var selectedFac = null;
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].Student_Name === studentName){
-            selectedStudent = studentsCatData[i].ROWID;
+        if((studentsCatData[i].ZS28_Students || studentsCatData[i]).Student_Name === studentName){
+            selectedStudent = (studentsCatData[i].ZS28_Students || studentsCatData[i]).ROWID;
             break;
         }   
     }
     for(var j = 0; j < facData.length; j++){
-        if(facData[j].Student_Name === facName){
-            selectedFac = facData[j].ROWID;
+        if((facData[j].Faculty || facData[j]).name === facName){
+            selectedFac = (facData[j].Faculty || facData[j]).ROWID;
             break;
         }
     }
