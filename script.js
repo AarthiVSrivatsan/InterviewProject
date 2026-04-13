@@ -175,9 +175,11 @@ const app = {
             var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var panelMembersCatData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
             if (catalystData) {
-                var interviewsCatData = JSON.parse(catalystData);
+                 var interviewsCatData = JSON.parse(catalystData);
+                app.interviews = [];  // reset, build from actual data
+                var roundNum = 1;
                 interviewsCatData.forEach(function(ivtemp) {
-                    iv = ivtemp.ZS28_Interviews;
+                    var iv = ivtemp.ZS28_Interviews;
                     var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === String(iv.Student); });
                     var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
                     if (!stuObj || !facObj) return;
@@ -186,9 +188,18 @@ const app = {
                     var fName = facObj.Faculty.Name;
                     var iId   = String(iv.ROWID);
 
+                        // Add interview round if not already added
+                    if (!app.interviews.find(function(i) { return i.id === iId; })) {
+                        app.interviews.push({ id: iId, name: 'Interview-' + roundNum, isHead: false });
+                        roundNum++;
+                    }
+
                     if (!app.assignments[sName]) app.assignments[sName] = {};
                     app.assignments[sName][iId] = fName;
                 });
+
+                    // Always add Head Interview at the end
+                    app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
             }else{
                 app.students.forEach(student => {
                 app.assignments[student] = {};
@@ -198,10 +209,6 @@ const app = {
                 });
             }
 
-            var hasHead = app.interviews.some(i => i.isHead);
-            if (!hasHead) {
-                app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
-            }
             return;
         }
 
