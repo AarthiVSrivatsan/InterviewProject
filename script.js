@@ -237,13 +237,13 @@ async function assignInterview(studentName, facName){
     var selectedStudent = null;
     var selectedFac = null;
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].Student_Name === studentName){
+        if(studentsCatData[i].ZS28_Students.Student_Name === studentName){
             selectedStudent = studentsCatData[i].ROWID;
             break;
         }   
     }
     for(var j = 0; j < facData.length; j++){
-        if(facData[j].Name === facName){
+        if(facData[j].Faculty.Name === facName){
             selectedFac = facData[j].ROWID;
             break;
         }
