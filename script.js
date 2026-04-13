@@ -163,18 +163,6 @@ const app = {
                 alert('Please upload students and add panel members');
                 return;
             }
-
-            // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
-            // restore them directly — don't wipe the faculty selections.
-            var savedAssignments = localStorage.getItem('assignmentsData');
-            var savedInterviews  = localStorage.getItem('interviewsData');
-
-            if (savedAssignments && savedInterviews) {
-                app.assignments = JSON.parse(savedAssignments);
-                app.interviews  = JSON.parse(savedInterviews);
-                return;   // already fully hydrated — nothing left to do
-            }
-
             // Fresh session: build default interview rounds and empty assignment slots
             app.interviews = [
                 { id: '1', name: 'Interview-1', isHead: false },
@@ -188,6 +176,18 @@ const app = {
                     app.assignments[student][interview.id] = '';
                 });
             });
+            // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
+            // restore them directly — don't wipe the faculty selections.
+            var savedAssignments = localStorage.getItem('assignmentsData');
+            var savedInterviews  = localStorage.getItem('interviewsData');
+
+            if (savedAssignments && savedInterviews) {
+                app.assignments = JSON.parse(savedAssignments);
+                app.interviews  = JSON.parse(savedInterviews);
+                return;   // already fully hydrated — nothing left to do
+            }
+
+            
         }
 
         function addInterviewRound() {
