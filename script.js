@@ -175,41 +175,52 @@ const app = {
             var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var panelMembersCatData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
             if (catalystData) {
-                 var interviewsCatData = JSON.parse(catalystData);
-                app.interviews = [];  // reset, build from actual data
-                var roundNum = 1;
-                interviewsCatData.forEach(function(ivtemp) {
-                    var iv = ivtemp.ZS28_Interviews;
-                    var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === String(iv.Student); });
-                    var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
-                    if (!stuObj || !facObj) return;
+    var interviewsCatData = JSON.parse(catalystData);
 
-                    var sName = stuObj.ZS28_Students.Student_Name;
-                    var fName = facObj.Faculty.Name;
-                    var iId   = String(iv.ROWID);
+    // Group interviews by student
+    var byStudent = {};
+    interviewsCatData.forEach(function(ivtemp) {
+        var iv = ivtemp.ZS28_Interviews;
+        var sId = String(iv.Student);
+        if (!byStudent[sId]) byStudent[sId] = [];
+        byStudent[sId].push(iv);
+    });
 
-                        // Add interview round if not already added
-                    if (!app.interviews.find(function(i) { return i.id === iId; })) {
-                        app.interviews.push({ id: iId, name: 'Interview-' + roundNum, isHead: false });
-                        roundNum++;
-                    }
+    // Find max number of rounds across all students
+    var maxRounds = 0;
+    Object.keys(byStudent).forEach(function(sId) {
+        if (byStudent[sId].length > maxRounds) maxRounds = byStudent[sId].length;
+    });
 
-                    if (!app.assignments[sName]) app.assignments[sName] = {};
-                    app.assignments[sName][iId] = fName;
-                });
+    // Build app.interviews with simple round ids '1','2',...
+    app.interviews = [];
+    for (var r = 1; r <= maxRounds; r++) {
+        app.interviews.push({ id: String(r), name: 'Interview-' + r, isHead: false });
+    }
+    app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
 
-                    // Always add Head Interview at the end
-                    app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
-            }else{
-                app.students.forEach(student => {
-                app.assignments[student] = {};
-                    app.interviews.forEach(interview => {
-                        app.assignments[student][interview.id] = '';
-                    });
-                });
-            }
+    // Build assignments using round index as key matching interview.id
+    Object.keys(byStudent).forEach(function(sId) {
+        var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === sId; });
+        if (!stuObj) return;
+        var sName = stuObj.ZS28_Students.Student_Name;
+        if (!app.assignments[sName]) app.assignments[sName] = {};
 
-            return;
+        byStudent[sId].forEach(function(iv, idx) {
+            var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
+            app.assignments[sName][String(idx + 1)] = facObj ? facObj.Faculty.Name : '';
+        });
+    });
+} else {
+    app.students.forEach(student => {
+        app.assignments[student] = {};
+        app.interviews.forEach(interview => {
+            app.assignments[student][interview.id] = '';
+        });
+    });
+}
+return;
+
         }
 
         function addInterviewRound() {
