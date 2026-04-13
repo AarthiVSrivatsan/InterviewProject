@@ -368,13 +368,6 @@ function renderConfigView() {
             var studentsData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var ivEntry = interviewsCatData.find(function(entry) {
                 var iv = entry.ZS28_Interviews || entry;
-                // return String(iv.Student) === String(
-                //     (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
-                //         .find(function(s) { return (s.ZS28_Students || s).Student_Name === student; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
-                // ) && Object.values(app.assignments[student] || {}).includes(
-                //     (JSON.parse(localStorage.getItem('panelMembersCatData') || '[]')
-                //         .find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); }) || {Faculty:{Name:''}}).Faculty.Name
-                // );
                 var studentObj = studentsData.find(function(s) {
                     return (s.ZS28_Students || s).Student_Name === student;
                 });
@@ -384,12 +377,9 @@ function renderConfigView() {
                     return String((f.Faculty || f).ROWID) === String(iv.Faculty);
                 });
                 var facultyName = (facultyObj && facultyObj.Faculty.Name) || '';
-                var assignedFaculty = Object.values(app.assignments[student] || {}).find(function(assignedFac) {
-                    return assignedFac === facultyName;
-                });
-                if(assignedFaculty !== undefined || assignedFaculty !== ''){
-                    return entry;
-                }   
+                var assignedFacultyList = Object.values(app.assignments[student] || {});
+
+                return assignedFacultyList.includes(facultyName); 
             });
             if (ivEntry) {
                 var ivData = ivEntry.ZS28_Interviews || ivEntry;
