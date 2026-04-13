@@ -62,11 +62,11 @@ progressTracker.fetchStudentDetails = function(studentName){
 progressTracker.updateInterview = function(selInterview, verdict) {
     var result;
     const json = {
-                "interview_id": selInterview,
+                "id": selInterview,
                 "verdict": verdict
             };
     result = fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview", {
-        method: "PUT",
+        method: "PATCH",
         headers: {
             "Content-Type": "application/json",
         },
