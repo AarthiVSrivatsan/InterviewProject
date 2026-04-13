@@ -190,7 +190,7 @@ const app = {
                     if (!stuObj || !facObj) return;
 
                     var sName = stuObj.ZS28_Students.Student_Name;
-                    var fName = facObj.ZS28_Faculty.Name;
+                    var fName = facObj.Faculty.Name;
                     var iId   = String(iv.ROWID);
 
                     if (!app.assignments[sName]) app.assignments[sName] = {};
