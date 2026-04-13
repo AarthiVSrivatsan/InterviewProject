@@ -184,6 +184,10 @@ const app = {
             if (savedAssignments && savedInterviews) {
                 app.assignments = JSON.parse(savedAssignments);
                 app.interviews  = JSON.parse(savedInterviews);
+                var hasHead = app.interviews.some(i => i.isHead);
+                if (!hasHead) {
+                    app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
+                }
                 return;   // already fully hydrated — nothing left to do
             }
 
