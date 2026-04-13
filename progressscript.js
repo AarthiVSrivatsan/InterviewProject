@@ -38,7 +38,7 @@ progressTracker.updateColorCode = function(selectElem) {
         var selInterview = null;
         for(var i = 0; i < interviewsCatData.length; i++){
             var iv = interviewsCatData[i].ZS28_Interviews || interviewsCatData[i];
-            if(String(iv.Student) === String(selectedStudent)){
+            if(String(iv.Student) === String(selectedStudent.ROWID)){
                 selInterview = iv.ROWID;
                 break;
             }
@@ -55,7 +55,7 @@ progressTracker.fetchStudentDetails = function(studentName){
     var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
     for(var i = 0; i < studentsCatData.length; i++){
         if(studentsCatData[i].ZS28_Students.Student_Name === studentName){
-            return studentsCatData[i];
+            return studentsCatData[i].ZS28_Students;
         }
     }
     return null;
