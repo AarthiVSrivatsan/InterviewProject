@@ -238,7 +238,7 @@ function updateInterviewRound(student, roundId, newName, elem) {
     for (const rid in app.assignments[student]) {
         if (!Object.prototype.hasOwnProperty.call(app.assignments[student], rid)) continue;
         // allow updating the same round to the same value
-        if (rid !== roundId && app.assignments[student][rid] === newName && newName !== '') {
+        if (rid !== roundId && Object.keys(app.assignments[student])[rid] === newName && newName !== '') {
             alert('Interviewer already assigned in another round. Please choose a different interviewer.');
             elem.value = "";
             return;
@@ -314,8 +314,11 @@ function renderConfigView() {
         <th>Remarks</th>
     `;
     tbody.innerHTML = app.students.map(student => {
+        var keyLength = Object.keys(app.interviews).length;
+        var initialIdx = 0;
         const cells = app.interviews.map(interview => {
             // build cell content based on interview properties
+            var idx = initialIdx;
             if (interview.isHead && interview.interviewer) {
                 return `<td>
                             <input type="text" value="${interview.interviewer}" disabled style="background: #f1f5f9; cursor: not-allowed;">
@@ -328,9 +331,10 @@ function renderConfigView() {
                 return `<option value="${member}" ${selected}>${member}</option>`;
             }).join('');
 
-            var facName = (app.assignments && app.assignments[student] && app.assignments[student][interview.id]) ? app.assignments[student][interview.id] : '';
+            var facName = (app.assignments && app.assignments[student] && Object.keys(app.assignments[student])[idx]) ? Object.keys(app.assignments[student])[idx] : '';
             var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
-            var thisVerdict = (verdicts[student] && verdicts[student][interview.id]) ? verdicts[student][interview.id] : '';    
+            var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
+            idx++;
             if (thisVerdict != "") {
             
                 return `<td>
