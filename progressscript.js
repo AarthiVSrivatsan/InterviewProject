@@ -65,7 +65,7 @@ progressTracker.updateInterview = function(selInterview, verdict) {
                 "id": selInterview,
                 "verdict": verdict
             };
-    result = fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview", {
+    result = fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview/"+selInterview+"", {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",
