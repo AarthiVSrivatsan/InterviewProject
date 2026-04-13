@@ -327,7 +327,7 @@ function renderConfigView() {
 
             // helper to build options list
             const options = app.panelMembers.map(member => {
-                const selected = (app.assignments[student] && app.assignments[student][interview.id] === member) ? 'selected' : '';
+                const selected = (app.assignments[student] && Object.keys(app.assignments[student])[idx] === member) ? 'selected' : '';
                 return `<option value="${member}" ${selected}>${member}</option>`;
             }).join('');
 
