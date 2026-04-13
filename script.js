@@ -209,10 +209,11 @@ const app = {
                          var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
                          app.assignments[sName][String(idx + 1)] = facObj ? facObj.Faculty.Name : '';
 
-                         if (iv.verdict && iv.verdict !== '' && iv.verdict !== 'undefined') {
-                            iv.verdict = iv.verdict;  // already there, just ensure it persists
+                         if (iv.Verdict && iv.Verdict !== '' && iv.Verdict !== 'undefined') {
+                            iv.Verdict = iv.Verdict;  // already there, just ensure it persists
                         }
                     });
+                    localStorage.setItem('interviewsCatData', JSON.stringify(interviewsCatData));
                 });
             } else {
                 app.students.forEach(student => {
