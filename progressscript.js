@@ -54,7 +54,7 @@ progressTracker.updateColorCode = function(selectElem) {
 progressTracker.fetchStudentDetails = function(studentName){
     var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].Student_Name === studentName){
+        if(studentsCatData[i].ZS28_Students.Student_Name === studentName){
             return studentsCatData[i];
         }
     }
