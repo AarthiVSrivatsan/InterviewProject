@@ -281,7 +281,7 @@ async function assignInterview(studentName, facName){
   });
 
   let result = await res.json();
-
+  localStorage.setItem('assignmentsData', JSON.stringify(app.assignments));
   return result;
 }
 function renderConfigView() {
