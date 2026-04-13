@@ -384,9 +384,12 @@ function renderConfigView() {
                     return String((f.Faculty || f).ROWID) === String(iv.Faculty);
                 });
                 var facultyName = (facultyObj && facultyObj.Faculty.Name) || '';
-                return (String(iv.Student) === String(studentId) &&
-                        app.assignments[student] &&
-                        app.assignments[student][iv.Faculty] === facultyName);   // ✅ direct mapping check);
+                var assignedFaculty = (Object.values(app.assignments[student]) || {}).find(function(assignedFac) {
+                    return assignedFac === facultyName;
+                });
+                if(assignedFaculty !== undefined || assignedFaculty !== ''){
+                    return entry;
+                }   
             });
             if (ivEntry) {
                 var ivData = ivEntry.ZS28_Interviews || ivEntry;
