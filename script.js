@@ -336,7 +336,7 @@ function renderConfigView() {
             var facNameToDisplay = panelMemberList.find((fac) => fac.Faculty.ROWID === facName) ? fac.Faculty.Name : '';
             var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
             var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
-            idx++;
+            initialIdx++;
             if (thisVerdict != "") {
             
                 return `<td>
