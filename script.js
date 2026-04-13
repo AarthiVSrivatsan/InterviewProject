@@ -108,7 +108,7 @@ const app = {
                 body: JSON.stringify(json)
             }).then(response => response.json()).then(data => {
                 console.log("Success:", data);
-                var studArr = JSON.parse(localStorage.getItem('studentsCatData') || []);
+                var studArr = localStorage.getItem('studentsCatData') ? JSON.parse(localStorage.getItem('studentsCatData')) : [];
                 studArr.push(data[0]);
                 localStorage.setItem('studentsCatData', JSON.stringify(studArr));
             }).catch((error) => {
@@ -132,7 +132,7 @@ const app = {
                 },
                 body: JSON.stringify(json)
             }).then(response => response.json()).then(data => {
-                var facArr = JSON.parse(localStorage.getItem('panelMembersCatData') || []);
+                var facArr = localStorage.getItem('panelMembersCatData') ? JSON.parse(localStorage.getItem('panelMembersCatData')) : [];
                 facArr.push(data[0]);
                 localStorage.setItem('panelMembersCatData', JSON.stringify(facArr));
                 console.log("Success:", data);
