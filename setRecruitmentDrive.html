@@ -195,7 +195,7 @@ async function loadDrive() {
         var facRes = await fetch(BASE_URL + '/faculty?recruitment_drive_id=' + driveId);
         if (!facRes.ok) throw new Error('Faculty fetch failed (HTTP ' + facRes.status + ')');
         var panelMembersCatData = await facRes.json();    // [{ROWID, name, ...}]
-        var panelNames = panelMembersCatData.map(function(f) { return f.Faculty.name; });
+        var panelNames = panelMembersCatData.map(function(f) { return f.Faculty.Name; });
         stepState(2, 'done');
 
         /* ── Step 3: fetch interview assignments ── */
@@ -214,7 +214,8 @@ async function loadDrive() {
         // Initialise empty slot for every student
         studentNames.forEach(function(sName) { assignmentsData[sName] = {}; });
 
-        interviewsCatData.forEach(function(iv) {
+        interviewsCatData.forEach(function(ivtemp) {
+            iv = ivtemp.ZS28_Interviews;
             var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
             var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
             if (!stuObj) return;
