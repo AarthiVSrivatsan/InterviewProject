@@ -178,8 +178,8 @@ const app = {
                 var interviewsCatData = JSON.parse(catalystData);
                 interviewsCatData.forEach(function(ivtemp) {
                     iv = ivtemp.ZS28_Interviews;
-                    var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
-                    var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
+                    var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.Student); });
+                    var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.Faculty); });
                     if (!stuObj || !facObj) return;
 
                     var sName = stuObj.ZS28_Students.Student_Name;
