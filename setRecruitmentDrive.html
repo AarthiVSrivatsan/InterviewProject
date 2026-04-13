@@ -6,7 +6,6 @@
     <title>Load Recruitment Drive</title>
     <link rel="stylesheet" href="style.css" />
     <style>
-        /* ── page-level layout ── */
         body {
             display: flex;
             align-items: center;
@@ -24,19 +23,9 @@
             max-width: 480px;
         }
 
-        .load-card h1 {
-            font-size: 1.6rem;
-            margin-bottom: 0.4rem;
-            color: #0f172a;
-        }
+        .load-card h1 { font-size: 1.6rem; margin-bottom: 0.4rem; color: #0f172a; }
+        .load-card .subtitle { font-size: 0.92rem; color: #64748b; margin-bottom: 2rem; }
 
-        .load-card .subtitle {
-            font-size: 0.92rem;
-            color: #64748b;
-            margin-bottom: 2rem;
-        }
-
-        /* ── status / feedback ── */
         #statusBox {
             display: none;
             border-radius: 0.5rem;
@@ -45,43 +34,29 @@
             margin-top: 1.25rem;
             line-height: 1.5;
         }
-
         #statusBox.info    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
         #statusBox.success { background:#dcfce7; color:#166534; border:1px solid #86efac; }
         #statusBox.error   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
 
-        /* ── step list shown during loading ── */
         .steps { list-style: none; margin-top: 0.5rem; }
         .steps li {
-            display: flex;
-            align-items: center;
-            gap: 0.55rem;
-            padding: 0.3rem 0;
-            font-size: 0.875rem;
-            color: #475569;
-            opacity: 0.4;
-            transition: opacity 0.3s;
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.3rem 0; font-size: 0.875rem;
+            color: #475569; opacity: 0.4; transition: opacity 0.3s;
         }
-        .steps li.active  { opacity: 1; color: #1d4ed8; }
-        .steps li.done    { opacity: 1; color: #059669; }
-        .steps li.failed  { opacity: 1; color: #dc2626; }
+        .steps li.active { opacity: 1; color: #1d4ed8; }
+        .steps li.done   { opacity: 1; color: #059669; }
+        .steps li.failed { opacity: 1; color: #dc2626; }
         .steps li .dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            flex-shrink: 0;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; flex-shrink: 0;
         }
 
-        /* spinner inside button */
         .spinner {
-            display: inline-block;
-            width: 14px; height: 14px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            vertical-align: middle;
-            margin-right: 6px;
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+            vertical-align: middle; margin-right: 6px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -98,10 +73,14 @@
         <input
             type="text"
             id="driveInput"
+            list="driveList"
             placeholder="e.g. Campus Drive 2025"
             onkeypress="if(event.key==='Enter') loadDrive()"
             autocomplete="off"
         />
+        <!-- populated on page load with all existing drive names -->
+        <datalist id="driveList"></datalist>
+        <small class="upload-hint" id="driveHint" style="display:none; margin-top:0.4rem;"></small>
     </div>
 
     <button class="btn-success" id="loadBtn" onclick="loadDrive()">
@@ -112,153 +91,183 @@
 </div>
 
 <script>
-    const BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
+const BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
 
-    /* ── helpers ── */
-    function showStatus(type, html) {
-        const box = document.getElementById('statusBox');
-        box.className = type;
-        box.innerHTML = html;
-        box.style.display = 'block';
-    }
+/* ─── helpers ─────────────────────────────────────────────── */
+function showStatus(type, html) {
+    const box = document.getElementById('statusBox');
+    box.className = type;
+    box.innerHTML = html;
+    box.style.display = 'block';
+}
 
-    function setLoading(on) {
-        const btn = document.getElementById('loadBtn');
-        btn.disabled = on;
-        btn.innerHTML = on
-            ? '<span class="spinner"></span> Loading…'
-            : 'Load &amp; Continue →';
-    }
+function setLoading(on) {
+    const btn = document.getElementById('loadBtn');
+    btn.disabled = on;
+    btn.innerHTML = on
+        ? '<span class="spinner"></span> Loading\u2026'
+        : 'Load &amp; Continue \u2192';
+}
 
-    function buildSteps(labels) {
-        return `<ul class="steps">${labels.map((l,i)=>`<li id="step${i}"><span class="dot"></span>${l}</li>`).join('')}</ul>`;
-    }
+function buildSteps(labels) {
+    return '<ul class="steps">' + labels.map(function(l, i) {
+        return '<li id="step' + i + '"><span class="dot"></span>' + l + '</li>';
+    }).join('') + '</ul>';
+}
 
-    function stepState(idx, state) {           // state: active | done | failed
-        const el = document.getElementById('step'+idx);
-        if (el) el.className = state;
-    }
+function stepState(idx, state) {
+    var el = document.getElementById('step' + idx);
+    if (el) el.className = state;
+}
 
-    /* ── main loader ── */
-    async function loadDrive() {
-        const name = document.getElementById('driveInput').value.trim();
-        if (!name) {
-            showStatus('error', '⚠️ Please enter a recruitment drive name.');
-            return;
+/* ─── page load: prefetch all drive names for the datalist ── */
+(async function prefetchDrives() {
+    try {
+        var res = await fetch(BASE_URL + '/recruitment-drive');
+        if (!res.ok) return;
+        var all = await res.json();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
+        var dl  = document.getElementById('driveList');
+
+        (Array.isArray(all) ? all : []).forEach(function(row) {
+            var d = row.RecruitmentDrive || row;
+            if (d.recruitment_name) {
+                var opt = document.createElement('option');
+                opt.value = d.recruitment_name;
+                dl.appendChild(opt);
+            }
+        });
+
+        var count = dl.childElementCount;
+        if (count > 0) {
+            var hint = document.getElementById('driveHint');
+            hint.textContent = count + ' drive' + (count > 1 ? 's' : '') + ' available \u2014 start typing to filter.';
+            hint.style.display = 'block';
         }
+    } catch (e) { /* datalist is a nice-to-have; silently ignore */ }
+})();
 
-        setLoading(true);
-        showStatus('info', buildSteps([
-            'Finding recruitment drive…',
-            'Fetching students…',
-            'Fetching faculty / panel members…',
-            'Fetching interview assignments…',
-            'Fetching verdicts…',
-            'Saving to session…'
-        ]));
-
-        try {
-            /* ── Step 0: find recruitment drive by name ── */
-            stepState(0, 'active');
-            const driveRes = await fetch(`${BASE_URL}/recruitment-drive?name=${encodeURIComponent(name)}`);
-            if (!driveRes.ok) throw new Error(`Drive lookup failed (HTTP ${driveRes.status})`);
-            const driveData = await driveRes.json();
-
-            // Accept either an array or a single object
-            const drive = Array.isArray(driveData) ? driveData[0] : driveData;
-            if (!drive || !drive.ROWID) throw new Error(`No recruitment drive found with name "${name}"`);
-            const driveId = drive.ROWID;
-            stepState(0, 'done');
-
-            /* ── Step 1: fetch students for this drive ── */
-            stepState(1, 'active');
-            const studentsRes = await fetch(`${BASE_URL}/student?recruitment_drive_id=${driveId}`);
-            if (!studentsRes.ok) throw new Error(`Students fetch failed (HTTP ${studentsRes.status})`);
-            const studentsCatData = await studentsRes.json();   // [{ROWID, Student_Name, …}]
-            const studentNames = studentsCatData.map(s => s.ZS28_Students.Student_Name);
-            stepState(1, 'done');
-
-            /* ── Step 2: fetch faculty / panel members ── */
-            stepState(2, 'active');
-            const facRes = await fetch(`${BASE_URL}/faculty?recruitment_drive_id=${driveId}`);
-            if (!facRes.ok) throw new Error(`Faculty fetch failed (HTTP ${facRes.status})`);
-            const panelMembersCatData = await facRes.json();    // [{ROWID, name, …}]
-            const panelNames = panelMembersCatData.map(f => f.Faculty.name);
-            stepState(2, 'done');
-
-            /* ── Step 3: fetch interview assignments ── */
-            stepState(3, 'active');
-            const interviewsRes = await fetch(`${BASE_URL}/interview?recruitment_drive_id=${driveId}`);
-            if (!interviewsRes.ok) throw new Error(`Interviews fetch failed (HTTP ${interviewsRes.status})`);
-            const interviewsCatData = await interviewsRes.json();  // [{ROWID, student_id, faculty_id, …}]
-            stepState(3, 'done');
-
-            /* ── Step 4: fetch verdicts ── */
-            stepState(4, 'active');
-            // Build assignments map  { studentName: { interviewId: facultyName } }
-            // and verdicts map        { studentName: { interviewId: verdictValue } }
-            const assignmentsData = {};
-            const verdicts = {};
-
-            studentNames.forEach(sName => { assignmentsData[sName] = {}; });
-
-            interviewsCatData.forEach(iv => {
-                // resolve student name
-                const stuObj = studentsCatData.find(s => s.ROWID === iv.student_id);
-                const facObj = panelMembersCatData.find(f => f.ROWID === iv.faculty_id);
-                if (!stuObj) return;
-                const sName = stuObj.Student_Name;
-                const fName = facObj ? facObj.name : '';
-                const iId   = String(iv.ROWID);
-
-                assignmentsData[sName][iId] = fName;
-
-                if (iv.verdict && iv.verdict !== '') {
-                    if (!verdicts[sName]) verdicts[sName] = {};
-                    verdicts[sName][iId] = iv.verdict;
-                }
-            });
-
-            // Build interviews array for interviewassign page compatibility
-            // Collect unique interview slot ids from all assignments
-            const allInterviewIds = [...new Set(interviewsCatData.map(iv => String(iv.ROWID)))];
-            const interviewsData = allInterviewIds.map((id, idx) => ({
-                id,
-                name: `Interview-${idx + 1}`,
-                isHead: false
-            }));
-            stepState(4, 'done');
-
-            /* ── Step 5: persist to localStorage ── */
-            stepState(5, 'active');
-            localStorage.setItem('recruitmentDriveId',   driveId);
-            localStorage.setItem('recruitmentDriveName', name);
-            localStorage.setItem('studentsData',         JSON.stringify(studentNames));
-            localStorage.setItem('studentsCatData',      JSON.stringify(studentsCatData));
-            localStorage.setItem('panelMembersData',     JSON.stringify(panelNames));
-            localStorage.setItem('panelMembersCatData',  JSON.stringify(panelMembersCatData));
-            localStorage.setItem('interviewsCatData',    JSON.stringify(interviewsCatData));
-            localStorage.setItem('assignmentsData',      JSON.stringify(assignmentsData));
-            localStorage.setItem('interviewsData',       JSON.stringify(interviewsData));
-            localStorage.setItem('verdicts',             JSON.stringify(verdicts));
-            stepState(5, 'done');
-
-            /* ── All done — redirect ── */
-            showStatus('success',
-                `✅ Drive <strong>${name}</strong> loaded successfully!<br>
-                 <small>${studentNames.length} students · ${panelNames.length} faculty · ${interviewsCatData.length} interviews</small><br>
-                 <small style="color:#059669;">Redirecting to progress page…</small>`
-            );
-
-            setTimeout(() => { window.location.href = 'progress.html'; }, 1200);
-
-        } catch (err) {
-            // Mark last active step as failed
-            document.querySelectorAll('.steps li.active').forEach(el => el.className = 'failed');
-            showStatus('error', `❌ <strong>Error:</strong> ${err.message}`);
-            setLoading(false);
-        }
+/* ─── main loader ─────────────────────────────────────────── */
+async function loadDrive() {
+    var name = document.getElementById('driveInput').value.trim();
+    if (!name) {
+        showStatus('error', '\u26a0\ufe0f Please enter a recruitment drive name.');
+        return;
     }
+
+    setLoading(true);
+    showStatus('info', buildSteps([
+        'Finding recruitment drive\u2026',
+        'Fetching students\u2026',
+        'Fetching faculty / panel members\u2026',
+        'Fetching interview assignments\u2026',
+        'Building assignments & verdicts\u2026',
+        'Saving to session\u2026'
+    ]));
+
+    try {
+        /* ── Step 0: GET all drives, find match client-side by name ── */
+        stepState(0, 'active');
+
+        var driveRes = await fetch(BASE_URL + '/recruitment-drive');
+        if (!driveRes.ok) throw new Error('Drive lookup failed (HTTP ' + driveRes.status + ')');
+        var allDrives = await driveRes.json();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
+
+        var matched = (Array.isArray(allDrives) ? allDrives : []).find(function(row) {
+            var d = row.RecruitmentDrive || row;
+            return (d.recruitment_name || '').toLowerCase() === name.toLowerCase();
+        });
+        if (!matched) throw new Error('No recruitment drive found with name "' + name + '"');
+
+        var driveObj = matched.RecruitmentDrive || matched;
+        var driveId  = String(driveObj.ROWID);
+        stepState(0, 'done');
+
+        /* ── Step 1: fetch students for this drive ── */
+        stepState(1, 'active');
+        var studentsRes = await fetch(BASE_URL + '/student?recruitment_drive_id=' + driveId);
+        if (!studentsRes.ok) throw new Error('Students fetch failed (HTTP ' + studentsRes.status + ')');
+        var studentsCatData = await studentsRes.json();   // [{ROWID, Student_Name, ...}]
+        var studentNames = studentsCatData.map(function(s) { return s.ZS28_Students.Student_Name; });
+        stepState(1, 'done');
+
+        /* ── Step 2: fetch faculty / panel members ── */
+        stepState(2, 'active');
+        var facRes = await fetch(BASE_URL + '/faculty?recruitment_drive_id=' + driveId);
+        if (!facRes.ok) throw new Error('Faculty fetch failed (HTTP ' + facRes.status + ')');
+        var panelMembersCatData = await facRes.json();    // [{ROWID, name, ...}]
+        var panelNames = panelMembersCatData.map(function(f) { return f.Faculty.name; });
+        stepState(2, 'done');
+
+        /* ── Step 3: fetch interview assignments ── */
+        stepState(3, 'active');
+        var interviewsRes = await fetch(BASE_URL + '/interview?recruitment_drive_id=' + driveId);
+        if (!interviewsRes.ok) throw new Error('Interviews fetch failed (HTTP ' + interviewsRes.status + ')');
+        var interviewsCatData = await interviewsRes.json();  // [{ROWID, student_id, faculty_id, verdict, ...}]
+        stepState(3, 'done');
+
+        /* ── Step 4: build assignmentsData + verdicts maps ── */
+        stepState(4, 'active');
+
+        var assignmentsData = {};
+        var verdicts = {};
+
+        // Initialise empty slot for every student
+        studentNames.forEach(function(sName) { assignmentsData[sName] = {}; });
+
+        interviewsCatData.forEach(function(iv) {
+            var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
+            var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
+            if (!stuObj) return;
+
+            var sName = stuObj.Student_Name;
+            var fName = facObj ? facObj.name : '';
+            var iId   = String(iv.ROWID);
+
+            // assignments map: { studentName: { interviewRowId: facultyName } }
+            assignmentsData[sName][iId] = fName;
+
+            // verdicts map: only add if the interview already has a verdict
+            if (iv.verdict && iv.verdict !== '') {
+                if (!verdicts[sName]) verdicts[sName] = {};
+                verdicts[sName][iId] = iv.verdict;
+            }
+        });
+
+        // Build interviewsData array for interviewassign.html compatibility
+        var allInterviewIds = [...new Set(interviewsCatData.map(function(iv) { return String(iv.ROWID); }))];
+        var interviewsData  = allInterviewIds.map(function(id, idx) {
+            return { id: id, name: 'Interview-' + (idx + 1), isHead: false };
+        });
+        stepState(4, 'done');
+
+        /* ── Step 5: persist everything to localStorage ── */
+        stepState(5, 'active');
+        localStorage.setItem('recruitmentDriveId',   driveId);
+        localStorage.setItem('recruitmentDriveName', name);
+        localStorage.setItem('studentsData',         JSON.stringify(studentNames));
+        localStorage.setItem('studentsCatData',      JSON.stringify(studentsCatData));
+        localStorage.setItem('panelMembersData',     JSON.stringify(panelNames));
+        localStorage.setItem('panelMembersCatData',  JSON.stringify(panelMembersCatData));
+        localStorage.setItem('interviewsCatData',    JSON.stringify(interviewsCatData));
+        localStorage.setItem('assignmentsData',      JSON.stringify(assignmentsData));
+        localStorage.setItem('interviewsData',       JSON.stringify(interviewsData));
+        localStorage.setItem('verdicts',             JSON.stringify(verdicts));
+        stepState(5, 'done');
+
+        /* ── All done — show summary and redirect ── */
+        showStatus('success',
+            '\u2705 Drive <strong>' + name + '</strong> loaded!<br>' +
+            '<small>' + studentNames.length + ' students \u00b7 ' + panelNames.length + ' faculty \u00b7 ' + interviewsCatData.length + ' interviews</small><br>' +
+            '<small style="color:#059669;">Redirecting to interview assignment page\u2026</small>'
+        );
+        setTimeout(function() { window.location.href = 'interviewassign.html'; }, 1200);
+
+    } catch (err) {
+        document.querySelectorAll('.steps li.active').forEach(function(el) { el.className = 'failed'; });
+        showStatus('error', '\u274c <strong>Error:</strong> ' + err.message);
+        setLoading(false);
+    }
+}
 </script>
 </body>
 </html>
