@@ -187,6 +187,7 @@ async function loadDrive() {
         var studentsRes = await fetch(BASE_URL + '/student?recruitment_drive_id=' + driveId);
         if (!studentsRes.ok) throw new Error('Students fetch failed (HTTP ' + studentsRes.status + ')');
         var studentsCatData = await studentsRes.json();   // [{ROWID, Student_Name, ...}]
+        localStorage.setItem('studentsCatData', JSON.stringify(studentsCatData));
         var studentNames = studentsCatData.map(function(s) { return s.ZS28_Students.Student_Name; });
         stepState(1, 'done');
 
@@ -195,6 +196,7 @@ async function loadDrive() {
         var facRes = await fetch(BASE_URL + '/faculty?recruitment_drive_id=' + driveId);
         if (!facRes.ok) throw new Error('Faculty fetch failed (HTTP ' + facRes.status + ')');
         var panelMembersCatData = await facRes.json();    // [{ROWID, name, ...}]
+        localStorage.setItem('panelMembersCatData', JSON.stringify(panelMembersCatData));
         var panelNames = panelMembersCatData.map(function(f) { return f.Faculty.Name; });
         stepState(2, 'done');
 
