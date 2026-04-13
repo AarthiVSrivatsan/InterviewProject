@@ -221,6 +221,11 @@ function updateInterviewRound(student, roundId, newName, elem) {
             return;
         }
     }
+    if(newName === "Uma"){
+        alert('Uma is assigned as the head interviewer and cannot be assigned to other rounds.');
+        elem.value = "";
+        return;
+    }
 
     app.assignments[student][roundId] = newName;
     assignInterview(student, newName).then(result => {
