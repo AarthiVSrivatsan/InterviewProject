@@ -176,20 +176,29 @@ const app = {
                     app.assignments[student][interview.id] = '';
                 });
             });
-            // If assignments already exist in localStorage (e.g. loaded from loadDrive.html),
-            // restore them directly — don't wipe the faculty selections.
-            var savedAssignments = localStorage.getItem('assignmentsData');
-            var savedInterviews  = localStorage.getItem('interviewsData');
+           var catalystData = localStorage.getItem('interviewsCatData');
+            if (catalystData) {
+                var interviewsCatData = JSON.parse(catalystData);
+                interviewsCatData.forEach(function(ivtemp) {
+                    iv = ivtemp.ZS28_Interviews;
+                    var stuObj = app.students.find(function(s) { return String(s) === String(iv.student_id); });
+                    var facObj = app.panelMembers.find(function(f) { return String(f) === String(iv.faculty_id); });
+                    if (!stuObj || !facObj) return;
 
-            if (savedAssignments && savedInterviews) {
-                app.assignments = JSON.parse(savedAssignments);
-                app.interviews  = JSON.parse(savedInterviews);
-                var hasHead = app.interviews.some(i => i.isHead);
-                if (!hasHead) {
-                    app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
-                }
-                return;   // already fully hydrated — nothing left to do
+                    var sName = stuObj;
+                    var fName = facObj;
+                    var iId   = String(iv.ROWID);
+
+                    if (!app.assignments[sName]) app.assignments[sName] = {};
+                    app.assignments[sName][iId] = fName;
+                });
             }
+
+            var hasHead = app.interviews.some(i => i.isHead);
+            if (!hasHead) {
+                app.interviews.push({ id: 'head', name: 'Head Interview', isHead: true, interviewer: 'Uma' });
+            }
+            return;
 
             
         }
