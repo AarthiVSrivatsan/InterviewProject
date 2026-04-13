@@ -238,7 +238,8 @@ function updateInterviewRound(student, roundId, newName, elem) {
     for (const rid in app.assignments[student]) {
         if (!Object.prototype.hasOwnProperty.call(app.assignments[student], rid)) continue;
         // allow updating the same round to the same value
-        if (rid !== roundId && Object.keys(app.assignments[student])[rid] === newName && newName !== '') {
+        //if (rid !== roundId && Object.keys(app.assignments[student])[rid] === newName && newName !== '') {
+        if (rid !== roundId && app.assignments[student][rid] === newName && newName !== '') {
             alert('Interviewer already assigned in another round. Please choose a different interviewer.');
             elem.value = "";
             return;
@@ -254,7 +255,7 @@ function updateInterviewRound(student, roundId, newName, elem) {
     assignInterview(student, newName).then(result => {
         console.log('Interview assignment updated:', result);
         var finalResult = JSON.parse(localStorage.getItem('interviewsCatData'));
-        finalResult = finalResult.push(result);
+        finalResult.push(result);
         localStorage.setItem('interviewsCatData', JSON.stringify(finalResult));
     }).catch(error => {
         console.error('Error updating interview assignment:', error);
@@ -327,7 +328,8 @@ function renderConfigView() {
                         </td>`;
             }
 
-            var facIdx = Object.keys(app.assignments[student])[idx];
+            //var facIdx = Object.keys(app.assignments[student])[idx];
+            var facIdx = interview.id;
             // helper to build options list
             const options = app.panelMembers.map(member => {
                 const selected = (app.assignments[student] && app.assignments[student][facIdx] === member) ? 'selected' : '';
@@ -335,7 +337,8 @@ function renderConfigView() {
             }).join('');
             var facName = (app.assignments && app.assignments[student] && app.assignments[student][facIdx]) ? app.assignments[student][facIdx] : '';
             var verdicts = JSON.parse(localStorage.getItem('verdicts') || '{}');
-            var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
+            //var thisVerdict = (verdicts[student] && Object.keys(verdicts[student])[idx]) ? Object.keys(verdicts[student])[idx] : '';    
+            var thisVerdict = (verdicts[student] && verdicts[student][interview.id]) ? verdicts[student][interview.id] : '';    
             initialIdx++;
             if (thisVerdict != "") {
             
