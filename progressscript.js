@@ -29,12 +29,21 @@ progressTracker.updateColorCode = function(selectElem) {
             tdElem.classList.remove("inprogress");
             tdElem.classList.add("done");
         }
+        var allFacData = localStorage.getItem('panelMembersCatData') ? JSON.parse(localStorage.getItem('panelMembersCatData')) : []; 
+        var facID = null;
+        var facObj = allFacData.find(function(fac) {
+            var facObj = fac.Faculty || fac;
+            if(String(facObj.Name) === String(facName)){
+                facID = facObj.ROWID;
+                return true;
+            }
+        });
         interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : {};
         var selectedStudent = progressTracker.fetchStudentDetails(studentName);
         var selInterview = null;
         for(var i = 0; i < interviewsCatData.length; i++){
             var iv = interviewsCatData[i].ZS28_Interviews || interviewsCatData[i];
-            if(String(iv.Student) === String(selectedStudent.ROWID) && String(iv.ROWID) === String(interviewID)){
+            if(String(iv.Student) === String(selectedStudent.ROWID) && String(iv.Faculty) === String(facID)){
                 iv.Verdict = verdict;   // also capital V to match the rest of the code
                 selInterview = iv.ROWID;
                 break;
