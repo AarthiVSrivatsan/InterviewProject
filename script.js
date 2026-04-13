@@ -364,15 +364,29 @@ function renderConfigView() {
             //var thisVerdict = "C";
 
             var thisVerdict = '';
+            var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
+            var studentsData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var ivEntry = interviewsCatData.find(function(entry) {
                 var iv = entry.ZS28_Interviews || entry;
-                return String(iv.Student) === String(
-                    (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
-                        .find(function(s) { return (s.ZS28_Students || s).Student_Name === student; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
-                ) && Object.values(app.assignments[student] || {}).includes(
-                    (JSON.parse(localStorage.getItem('panelMembersCatData') || '[]')
-                        .find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); }) || {Faculty:{Name:''}}).Faculty.Name
-                );
+                // return String(iv.Student) === String(
+                //     (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
+                //         .find(function(s) { return (s.ZS28_Students || s).Student_Name === student; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
+                // ) && Object.values(app.assignments[student] || {}).includes(
+                //     (JSON.parse(localStorage.getItem('panelMembersCatData') || '[]')
+                //         .find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); }) || {Faculty:{Name:''}}).Faculty.Name
+                // );
+                var studentObj = studentsData.find(function(s) {
+                    return (s.ZS28_Students || s).Student_Name === student;
+                });
+
+                var studentId = (studentObj && studentObj.ZS28_Students.ROWID) || '';
+                var facultyObj = panelData.find(function(f) {
+                    return String((f.Faculty || f).ROWID) === String(iv.Faculty);
+                });
+                var facultyName = (facultyObj && facultyObj.Faculty.Name) || '';
+                return (String(iv.Student) === String(studentId) &&
+                        app.assignments[student] &&
+                        app.assignments[student][iv.Faculty] === facultyName);   // ✅ direct mapping check);
             });
             if (ivEntry) {
                 var ivData = ivEntry.ZS28_Interviews || ivEntry;
