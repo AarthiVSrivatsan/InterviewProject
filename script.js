@@ -207,8 +207,8 @@ const app = {
                 Object.keys(byStudent).forEach(function(sId) {
                     var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === sId; });
                     if (!stuObj) return;
-                    var sName = stuObj.ZS28_Students.Student_Name;
-                    if (!app.assignments[sName]) app.assignments[sName] = {};
+                    var sName = stuObj.ZS28_Students.Student_Name + '_' + sId;
+                    app.assignments[sName] = {};
 
                     byStudent[sId].forEach(function(iv, idx) {
                          var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.Faculty); });
