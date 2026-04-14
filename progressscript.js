@@ -20,7 +20,7 @@ progressTracker.END_TR = "</tr>";
 progressTracker.updateColorCode = function(selectElem) {
     var verdict = selectElem.value;
     var id = selectElem.id;
-    var studentName = id.split('_')[1];
+    var studentName = id.split('_').slice(1).join('_');
     var interviewID = id.split('_')[0];
     if(verdict != ""){
         var tdElem = selectElem.parentElement.previousElementSibling;
@@ -60,11 +60,16 @@ progressTracker.updateColorCode = function(selectElem) {
     }
 }
 progressTracker.fetchStudentDetails = function(studentName){
-    var displayName = studentName.split('_')[0];
     var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
+    var parts = studentName.split('_');
+    var studentROWID = parts.length > 1 ? parts.slice(1).join('_') : null;
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].ZS28_Students.Student_Name === displayName){
-            return studentsCatData[i].ZS28_Students;
+        var s = studentsCatData[i].ZS28_Students;
+        // Match by ROWID if available, otherwise fall back to name
+        if(studentROWID && String(s.ROWID) === String(studentROWID)){
+            return s;
+        } else if(!studentROWID && s.Student_Name === studentName){
+            return s;
         }
     }
     return null;
