@@ -347,6 +347,7 @@ function renderConfigView() {
             </th>
         `).join('')}
         <th>Remarks</th>
+        <th>Result</th>
     `;
     tbody.innerHTML = app.students.map(student => {
         var keyLength = Object.keys(app.interviews).length;
@@ -415,17 +416,28 @@ function renderConfigView() {
 
         const remarks = (app.assignments[student] && app.assignments[student]['remarks']) ? String(app.assignments[student]['remarks']).replace(/"/g, '&quot;') : '';
         var displayName = student.includes('_') ? student.split('_')[0] : student;
+        var resultsCatData = JSON.parse(localStorage.getItem('resultsCatData') || '[]');
+        var studentROWID = student.includes('_') ? student.split('_').slice(1).join('_') : '';
+        var resultEntry = resultsCatData.find(function(r) {
+                return String((r.Results||r).student) === String(studentROWID);
+        });
+        var resultStatus = resultEntry ? (resultEntry.Results||resultEntry).status || '--' : '--';
+        var resultClass = resultStatus === 'Selected' ? 'status-selected' : 
+                  resultStatus === 'Rejected' ? 'status-rejected' : 
+                  resultStatus === 'Waitlist' ? 'status-waiting' : '';
         return `<tr>
                     <td>${displayName}</td>
                     ${cells}
+                    <td class="${resultClass}">
+                        ${resultStatus}
+                    </td> 
                     <td>
-                        <input type="text" placeholder="Add remarks" value="${remarks}" onchange="(function(s){ app.assignments[s] = app.assignments[s] || {}; app.assignments[s]['remarks'] = this.value; }).call(this, ${JSON.stringify(student)})">
+                        <input type="text" placeholder="Add remarks" value="${remarks}" onchange="" style="width: 100%; padding: 0.25rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;">
                     </td>
                 </tr>`;
     }).join('');
 }
-
-
+   
         function goToSetup() {
             switchView('setupView');
         }
