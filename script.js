@@ -42,6 +42,7 @@ const app = {
                 }).then(response => response.json()).then(data => {
                     console.log("Success:", data);
                     app.recruitmentDriveId = data[0].RecruitmentDrive.ROWID; // assuming response contains the new recruitment drive ID
+                    localStorage.setItem('recruitmentDriveId', data[0].RecruitmentDrive.ROWID);
                     alert('Recruitment Drive created successfully!');
                 }).catch((error) => {
                     console.error("Error:", error);
@@ -97,7 +98,7 @@ const app = {
             const json = {
                 "Student_Name": name,
                 "IsFirstLevelThere": false,
-                "recruitmentDrive": app.recruitmentDriveId,
+                "recruitmentDrive": localStorage.getItem('recruitmentDriveId'),
                 "RecruitmentDate": todaysDate.toISOString().split('T')[0]
             };
             fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/student", {
@@ -122,7 +123,7 @@ const app = {
             const json = {
                 "name": name,
                 "isSchoolHead": false,
-                "RecruitmentDrive": app.recruitmentDriveId,
+                "RecruitmentDrive": localStorage.getItem('recruitmentDriveId'),
                 "RecruitmentDate": todaysDate.toISOString().split('T')[0]
             };
             fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/faculty", {
@@ -313,7 +314,7 @@ async function assignInterview(studentName, facName){
     const json = {
                 "student_id": selectedStudent,
                 "faculty_id": selectedFac,
-                "recruitment_drive_id": app.recruitmentDriveId,
+                "recruitment_drive_id": localStorage.getItem('recruitmentDriveId'),
                 "recruitment_date": new Date().toISOString().split('T')[0],
                 "is_school_head_interview": false
             };
