@@ -214,7 +214,10 @@ async function loadDrive() {
         var verdicts = {};
 
         // Initialise empty slot for every student
-        studentNames.forEach(function(sName) { assignmentsData[sName] = {}; });
+        studentsCatData.forEach(function(s) {
+             var uniqueKey = s.ZS28_Students.Student_Name + '_' + s.ZS28_Students.ROWID;
+                assignmentsData[uniqueKey] = {};
+        });
 
         interviewsCatData.forEach(function(ivtemp) {
             iv = ivtemp.ZS28_Interviews;
@@ -223,11 +226,12 @@ async function loadDrive() {
             if (!stuObj) return;
 
             var sName = stuObj.ZS28_Students.Student_Name;
+            var uniqueKey = stuObj.ZS28_Students.Student_Name + '_' + stuObj.ZS28_Students.ROWID;
             var fName = facObj ? facObj.Faculty.Name : '';
             var iId   = String(iv.ROWID);
 
             // assignments map: { studentName: { interviewRowId: facultyName } }
-            assignmentsData[sName][iId] = fName;
+            assignmentsData[uniqueKey][iId] = fName;
 
             // verdicts map: only add if the interview already has a verdict
             if (iv.verdict && iv.verdict !== '') {
