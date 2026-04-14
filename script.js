@@ -102,7 +102,7 @@ const app = {
             container.innerHTML = `
                 <div class="list-count">Uploaded ${app.students.length} students</div>
                 <div style="max-height: 200px; overflow-y: auto; background: #f8fafc; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.5rem;">
-                    ${app.students.map(name => `<div style="font-size: 0.875rem; color: #475569; margin-bottom: 0.25rem;">${name}</div>`).join('')}
+                    ${app.students.map(name => `<div style="font-size: 0.875rem; color: #475569; margin-bottom: 0.25rem;">${name.split("_")[0]}</div>`).join('')}
                 </div>
             `;
             
