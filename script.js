@@ -24,6 +24,21 @@ const app = {
             };
             reader.readAsText(file);
         }
+        function clearDriveData() {
+            const keys = [
+                'studentsData',
+                'studentsCatData',
+                'panelMembersData',
+                'panelMembersCatData',
+                'interviewsCatData',
+                'assignmentsData',
+                'interviewsData',
+                'verdicts',
+                'resultsCatData'
+            ];
+
+            keys.forEach(k => localStorage.removeItem(k));
+        }
         function addRecDrive() {
             const input = document.getElementById('recDrive');
             const name = input.value.trim();
@@ -41,6 +56,7 @@ const app = {
                     body: JSON.stringify(json)
                 }).then(response => response.json()).then(data => {
                     console.log("Success:", data);
+                    clearDriveData(); // Clear previous drive data to avoid conflicts
                     app.recruitmentDriveId = data[0].RecruitmentDrive.ROWID; // assuming response contains the new recruitment drive ID
                     localStorage.setItem('recruitmentDriveId', data[0].RecruitmentDrive.ROWID);
                     alert('Recruitment Drive created successfully!');
