@@ -60,9 +60,10 @@ progressTracker.updateColorCode = function(selectElem) {
     }
 }
 progressTracker.fetchStudentDetails = function(studentName){
+    var displayName = studentName.split('_')[0];
     var studentsCatData = JSON.parse(localStorage.getItem('studentsCatData'));
     for(var i = 0; i < studentsCatData.length; i++){
-        if(studentsCatData[i].ZS28_Students.Student_Name === studentName){
+        if(studentsCatData[i].ZS28_Students.Student_Name === displayName){
             return studentsCatData[i].ZS28_Students;
         }
     }
@@ -166,7 +167,8 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
     var studentAssignments = Object.keys(data).forEach(function(key) {
         var studentName = key;
         var interviews = data[key];
-        var rowHTML = progressTracker.TEMPLATE_HTML.replace('${0}', studentName);
+        var displayName = studentName.split('_')[0];
+        var rowHTML = progressTracker.TEMPLATE_HTML.replace('${0}', displayName);
         var facultyVerdicts = Object.keys(interviews);
         if(facultyVerdicts.length > 0) {
             for(var j=0;j<facultyVerdicts.length;j++) {
