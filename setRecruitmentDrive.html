@@ -249,6 +249,9 @@ async function loadDrive() {
         });
         stepState(4, 'done');
 
+        // var resultsRes = await fetch(BASE_URL + '/result?recruitment_drive_id=' + driveId);
+        // var resultsCatData = resultsRes.ok ? await resultsRes.json() : [];
+        // localStorage.setItem('resultsCatData', JSON.stringify(resultsCatData));
         /* ── Step 5: persist everything to localStorage ── */
         stepState(5, 'active');
         localStorage.setItem('recruitmentDriveId',   driveId);
