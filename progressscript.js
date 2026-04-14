@@ -13,7 +13,7 @@ progressTracker.TEMPLATE_HTML = "<tr rel='appended'><td>${0} </td>";
 
 progressTracker.FACULTY_VERDICT_TEMPLATE = "<td rel='appended' class='${2}'>${0}</td><td><select id='${3}' disabled onchange='progressTracker.updateColorCode(this)'><option value='In Progress'>In Progress</option value='T'><option value='T'>T</option><option value='C+'>C+</option><option value='C'>C</option><option value='S+'>S+</option><option value='S'>S</option></select></td>";
 
-progressTracker.FINAL_RESULT_TEMPLATE = "<td rel='appended'>${0}</td>";
+progressTracker.FINAL_RESULT_TEMPLATE = "<td rel='appended'><select id='result_${1}' onchange='progressTracker.updateFinalResult(this)'><option value=''>--</option><option value='Selected'>Selected</option><option value='Rejected'>Rejected</option><option value='Waitlist'>Waitlist</option></select></td>";
 
 progressTracker.END_TR = "</tr>";
 
@@ -167,6 +167,49 @@ progressTracker.showCount = function() {
     document.querySelector('#count-inprogress').innerText = inProgressStudents; 
     document.querySelector('#count-pending').innerText = yetToStartStudents;
 }   
+progressTracker.updateFinalResult = function(selectElem) {
+    var status = selectElem.value;
+    var studentName = selectElem.id.replace('result_', '');  // "Pavithra_13916000000047059"
+    var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
+    var driveId = localStorage.getItem('recruitmentDriveId');
+
+    var resultsCatData = localStorage.getItem('resultsCatData') ? JSON.parse(localStorage.getItem('resultsCatData')) : [];
+    var resultEntry = resultsCatData.find(function(r) {
+        var res = r.Results || r;
+        return String(res.student) === String(studentROWID);
+    });
+
+    if (resultEntry) {
+        // PATCH existing result
+        var rowid = (resultEntry.Results || resultEntry).ROWID;
+        fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/result/" + rowid, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: status })
+        }).then(function(res) { return res.json(); }).then(function(data) {
+            // Update localStorage
+            (resultEntry.Results || resultEntry).status = status;
+            localStorage.setItem('resultsCatData', JSON.stringify(resultsCatData));
+            console.log('Result updated:', data);
+        }).catch(function(err) { console.error('Error updating result:', err); });
+    } else {
+        // POST new result
+        fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/result", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                student: studentROWID,
+                recruitment_drive_id: driveId,
+                status: status
+            })
+        }).then(function(res) { return res.json(); }).then(function(data) {
+            // Add to localStorage so subsequent changes use PATCH
+            resultsCatData.push(data[0]);
+            localStorage.setItem('resultsCatData', JSON.stringify(resultsCatData));
+            console.log('Result created:', data);
+        }).catch(function(err) { console.error('Error creating result:', err); });
+    }
+};
 progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var studentAssignments = Object.keys(data).forEach(function(key) {
@@ -206,7 +249,17 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
                 }
                 rowHTML += domToAppend.replace('${0}', facultyName);
             }
-            rowHTML += progressTracker.FINAL_RESULT_TEMPLATE.replace('${0}', "--");
+            var resultsCatData = localStorage.getItem('resultsCatData') ? JSON.parse(localStorage.getItem('resultsCatData')) : [];
+            var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
+            var resultEntry = resultsCatData.find(function(r) {
+                var res = r.Results || r;
+                return String(res.student) === String(studentROWID);
+            });
+            var currentStatus = resultEntry ? (resultEntry.Results || resultEntry).status || '' : '';
+            var resultHTML = progressTracker.FINAL_RESULT_TEMPLATE
+                .replace('${1}', studentName)
+                .replace('value=\'' + currentStatus + '\'', 'value=\'' + currentStatus + '\' selected');
+            rowHTML += resultHTML;
             rowHTML += progressTracker.END_TR;
         }
         document.querySelector('#progress-table').innerHTML += rowHTML;
