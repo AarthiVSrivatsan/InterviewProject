@@ -295,12 +295,14 @@ async function assignInterview(studentName, facName){
     facData = JSON.parse(localStorage.getItem('panelMembersCatData'));
     var selectedStudent = null;
     var selectedFac = null;
-    for(var i = 0; i < studentsCatData.length; i++){
-        var plainName = studentName.includes('_') ? studentName.split('_')[0] : studentName;
-        if((studentsCatData[i].ZS28_Students || studentsCatData[i]).Student_Name === plainName){
+    var selectedStudent = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : null;
+    if (!selectedStudent) {
+        for(var i = 0; i < studentsCatData.length; i++){
+        if((studentsCatData[i].ZS28_Students || studentsCatData[i]).Student_Name === studentName){
             selectedStudent = (studentsCatData[i].ZS28_Students || studentsCatData[i]).ROWID;
             break;
         }   
+    }
     }
     for(var j = 0; j < facData.length; j++){
         if((facData[j].Faculty || facData[j]).Name === facName){
