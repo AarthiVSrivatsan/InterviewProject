@@ -19,7 +19,7 @@ const app = {
                 const lines = text.split('\n').map(line => line.split(',')[0].trim()).filter(line => line);
                 const names = lines.map(line => line.trim()).filter(name => name.indexOf("name")==-1);
                 names.forEach(name => addToCatalyst(name));
-                app.students = [...new Set([...app.students, ...names])];
+                //app.students = [...new Set([...app.students, ...names])];
                 renderStudentList();
             };
             reader.readAsText(file);
@@ -68,8 +68,8 @@ const app = {
         function addManualStudent() {
             const input = document.getElementById('manualStudentName');
             const name = input.value.trim();
-            if (name && !app.students.includes(name)) {
-                app.students.push(name);
+            if (name) {
+                //app.students.push(name);
                 addToCatalyst(name);
                 input.value = '';
                 renderStudentList();
@@ -127,6 +127,7 @@ const app = {
                 console.log("Success:", data);
                 var studArr = localStorage.getItem('studentsCatData') ? JSON.parse(localStorage.getItem('studentsCatData')) : [];
                 studArr.push(data[0]);
+                app.students.push(name + '_' + data[0].ZS28_Students.ROWID); // Store name with ROWID for uniqueness    
                 localStorage.setItem('studentsCatData', JSON.stringify(studArr));
             }).catch((error) => {
                 console.error("Error:", error);
