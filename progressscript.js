@@ -185,10 +185,8 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
                     var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
                     var facObj = panelData.find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); });
                     var facNameInEntry = facObj ? (facObj.Faculty||facObj).Name : '';
-                        return facNameInEntry === facultyName && String(iv.Student) === String(
-                            (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
-                                    .find(function(s) { return s.ZS28_Students.Student_Name === displayName; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
-                            );
+                    var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
+                    return facNameInEntry === facultyName && String(iv.Student) === String(studentROWID);
                     });
                 if (ivEntry) {
                     var ivData = ivEntry.ZS28_Interviews || ivEntry;
