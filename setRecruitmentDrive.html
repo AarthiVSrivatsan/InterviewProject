@@ -147,7 +147,23 @@ function stepState(idx, state) {
 })();
 
 /* ─── main loader ─────────────────────────────────────────── */
+function clearDriveData() {
+    const keys = [
+        'studentsData',
+        'studentsCatData',
+        'panelMembersData',
+        'panelMembersCatData',
+        'interviewsCatData',
+        'assignmentsData',
+        'interviewsData',
+        'verdicts',
+        'resultsCatData'
+    ];
+
+    keys.forEach(k => localStorage.removeItem(k));
+}
 async function loadDrive() {
+    clearDriveData();
     var name = document.getElementById('driveInput').value.trim();
     if (!name) {
         showStatus('error', '\u26a0\ufe0f Please enter a recruitment drive name.');
