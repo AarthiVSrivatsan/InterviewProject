@@ -242,7 +242,7 @@ const app = {
                 isHead: false
             });
 
-            app.students.forEach(student => {
+            Object.keys(app.assignments).forEach(function(student) {
                 app.assignments[student][newId] = '';
             });
 
