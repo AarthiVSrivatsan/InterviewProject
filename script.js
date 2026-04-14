@@ -296,7 +296,8 @@ async function assignInterview(studentName, facName){
     var selectedStudent = null;
     var selectedFac = null;
     for(var i = 0; i < studentsCatData.length; i++){
-        if((studentsCatData[i].ZS28_Students || studentsCatData[i]).Student_Name === studentName){
+        var plainName = studentName.includes('_') ? studentName.split('_')[0] : studentName;
+        if((studentsCatData[i].ZS28_Students || studentsCatData[i]).Student_Name === plainName){
             selectedStudent = (studentsCatData[i].ZS28_Students || studentsCatData[i]).ROWID;
             break;
         }   
@@ -373,8 +374,9 @@ function renderConfigView() {
             var studentsData = JSON.parse(localStorage.getItem('studentsCatData') || '[]');
             var ivEntry = interviewsCatData.find(function(entry) {
                 var iv = entry.ZS28_Interviews || entry;
+                var studentROWID = student.includes('_') ? student.split('_').slice(1).join('_') : '';
                 var studentObj = studentsData.find(function(s) {
-                    return (s.ZS28_Students || s).Student_Name === student;
+                     return String((s.ZS28_Students || s).ROWID) === String(studentROWID);
                 });
 
                 var studentId = (studentObj && studentObj.ZS28_Students.ROWID) || '';
@@ -410,9 +412,9 @@ function renderConfigView() {
         }).join('');
 
         const remarks = (app.assignments[student] && app.assignments[student]['remarks']) ? String(app.assignments[student]['remarks']).replace(/"/g, '&quot;') : '';
-
+        var displayName = student.includes('_') ? student.split('_')[0] : student;
         return `<tr>
-                    <td>${student}</td>
+                    <td>${displayName}</td>
                     ${cells}
                     <td>
                         <input type="text" placeholder="Add remarks" value="${remarks}" onchange="(function(s){ app.assignments[s] = app.assignments[s] || {}; app.assignments[s]['remarks'] = this.value; }).call(this, ${JSON.stringify(student)})">
