@@ -182,7 +182,7 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
                     var facNameInEntry = facObj ? (facObj.Faculty||facObj).Name : '';
                         return facNameInEntry === facultyName && String(iv.Student) === String(
                             (JSON.parse(localStorage.getItem('studentsCatData') || '[]')
-                                    .find(function(s) { return s.ZS28_Students.Student_Name === studentName; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
+                                    .find(function(s) { return s.ZS28_Students.Student_Name === displayName; }) || {ZS28_Students:{ROWID:''}}).ZS28_Students.ROWID
                             );
                     });
                 if (ivEntry) {
