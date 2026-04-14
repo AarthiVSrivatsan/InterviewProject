@@ -129,12 +129,11 @@ progressTracker.showCount = function() {
     var yetToStartStudents = 0;
     Object.keys(assignments).forEach(function(student) {
         var interviews = assignments[student];
-        var maxInterviews = Object.keys(interviews).length;
         var count = 0;
-        Object.keys(interviews).forEach(function(key) {
-            if(interviews[key] == ""){
-                count++;
-            }
+        var interviewKeys = Object.keys(interviews).filter(function(k) { return k !== 'remarks'; });
+        var maxInterviews = interviewKeys.length;
+        interviewKeys.forEach(function(key) {
+            if(interviews[key] == ""){ count++; }
         });
         if(count == maxInterviews){
             yetToStartStudents = yetToStartStudents + 1;
@@ -144,22 +143,26 @@ progressTracker.showCount = function() {
     });
     var interviewsDone = 0;
     Object.keys(assignments).forEach(function(student) {
-        var maxInterviews = Object.keys(assignments[student]).length;
+        // Exclude 'remarks' key from count
+        var interviewKeys = Object.keys(assignments[student]).filter(function(k) { return k !== 'remarks'; });
+        var maxInterviews = interviewKeys.length;
+        if (maxInterviews === 0) return;
+
+        // Extract student ROWID from unique key
+        var studentROWID = student.includes('_') ? student.split('_').slice(1).join('_') : '';
+
+        // Filter interviews belonging to THIS student only
         var studentInterviews = interviewsCatData.filter(function(entry) {
-        var iv = entry.ZS28_Interviews || entry;
-        // match by faculty name stored in assignments
-        return Object.values(assignments[student]).includes(
-            (localStorage.getItem('panelMembersCatData') ? 
-                JSON.parse(localStorage.getItem('panelMembersCatData')) : [])
-            .find(function(f) { return String((f.Faculty||f).ROWID) === String((entry.ZS28_Interviews||entry).Faculty); })
-            ?.Faculty?.Name || ''
-        );
-    });
-    var completedCount = studentInterviews.filter(function(entry) {
-        var iv = entry.ZS28_Interviews || entry;
-        return iv.Verdict && iv.Verdict !== '' && iv.Verdict !== 'undefined' && iv.Verdict !== 'In Progress';
-    }).length;
-    if (completedCount === maxInterviews) interviewsDone++;
+            var iv = entry.ZS28_Interviews || entry;
+            return String(iv.Student) === String(studentROWID);
+        });
+
+        var completedCount = studentInterviews.filter(function(entry) {
+            var iv = entry.ZS28_Interviews || entry;
+            return iv.Verdict && iv.Verdict !== '' && iv.Verdict !== 'undefined' && iv.Verdict !== 'In Progress';
+        }).length;
+
+        if (completedCount === maxInterviews) interviewsDone++;
     });
     var completedStudents = interviewsDone;
     inProgressStudents = inProgressStudents - interviewsDone;
@@ -199,7 +202,7 @@ progressTracker.updateFinalResult = function(selectElem) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 student: studentROWID,
-                recruitment_drive_id: driveId,
+                recruitment_drive: driveId,
                 status: status
             })
         }).then(function(res) { return res.json(); }).then(function(data) {
