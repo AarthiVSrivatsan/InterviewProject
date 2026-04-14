@@ -20,7 +20,7 @@ const app = {
                 const names = lines.map(line => line.trim()).filter(name => name.indexOf("name")==-1);
                 names.forEach(name => addToCatalyst(name));
                 //app.students = [...new Set([...app.students, ...names])];
-                renderStudentList();
+                //renderStudentList();
             };
             reader.readAsText(file);
         }
@@ -72,7 +72,7 @@ const app = {
                 //app.students.push(name);
                 addToCatalyst(name);
                 input.value = '';
-                renderStudentList();
+                //renderStudentList();
             }
         }
 
@@ -129,6 +129,7 @@ const app = {
                 studArr.push(data[0]);
                 app.students.push(name + '_' + data[0].ZS28_Students.ROWID); // Store name with ROWID for uniqueness    
                 localStorage.setItem('studentsCatData', JSON.stringify(studArr));
+                renderStudentList();
             }).catch((error) => {
                 console.error("Error:", error);
             });
