@@ -188,7 +188,9 @@ async function loadDrive() {
         if (!studentsRes.ok) throw new Error('Students fetch failed (HTTP ' + studentsRes.status + ')');
         var studentsCatData = await studentsRes.json();   // [{ROWID, Student_Name, ...}]
         localStorage.setItem('studentsCatData', JSON.stringify(studentsCatData));
-        var studentNames = studentsCatData.map(function(s) { return s.ZS28_Students.Student_Name; });
+        var studentNames = studentsCatData.map(function(s) { 
+             return s.ZS28_Students.Student_Name + '_' + s.ZS28_Students.ROWID; 
+        });
         stepState(1, 'done');
 
         /* ── Step 2: fetch faculty / panel members ── */
@@ -221,8 +223,8 @@ async function loadDrive() {
 
         interviewsCatData.forEach(function(ivtemp) {
             iv = ivtemp.ZS28_Interviews;
-            var stuObj = studentsCatData.find(function(s) { return String(s.ROWID) === String(iv.student_id); });
-            var facObj = panelMembersCatData.find(function(f) { return String(f.ROWID) === String(iv.faculty_id); });
+            var stuObj = studentsCatData.find(function(s) { return String(s.ZS28_Students.ROWID) === String(iv.student_id); });
+            var facObj = panelMembersCatData.find(function(f) { return String(f.Faculty.ROWID) === String(iv.faculty_id); });
             if (!stuObj) return;
 
             var sName = stuObj.ZS28_Students.Student_Name;
