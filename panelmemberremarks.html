@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Member Evaluation</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        #statusBox {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border: 1px solid transparent;
+        }
+        #statusBox.info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        #statusBox.success { background: #dcfce7; color: #166534; border-color: #86efac; }
+        #statusBox.error { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="btn-secondary btn-small" type="button" onclick="window.location.href = 'progress.html'">
+        Back to Progress
+    </button>
+
+    <div class="card" style="margin-top:1rem;">
+        <h1 style="margin-bottom:1rem;">Panel Member Evaluation</h1>
+
+        <div class="form-group">
+            <label for="panelMemberName">Panel Member Name</label>
+            <input type="text" id="panelMemberName" disabled />
+        </div>
+
+        <div class="form-group">
+            <label for="studentSelect">Students Assigned</label>
+            <select id="studentSelect" disabled>
+                <option value="">Select a student</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="verdictSelect">Verdict</label>
+            <select id="verdictSelect">
+                <option value="">-- Select --</option>
+                <option value="T">T</option>
+                <option value="C">C</option>
+                <option value="C+">C+</option>
+                <option value="S+">S+</option>
+                <option value="S">S</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="remarksText">Remarks</label>
+            <textarea id="remarksText" placeholder="Enter remarks about the student..."></textarea>
+        </div>
+
+        <input type="hidden" id="selectedInterviewId" value="" />
+
+        <button id="submitBtn" class="btn-success" type="button" onclick="submitEvaluation()" disabled>
+            Submit
+        </button>
+
+        <div id="statusBox"></div>
+    </div>
+</div>
+
+<script>
+    const BASE_API = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
+
+    const VERDICT_OPTIONS = ["T", "C", "C+", "S+", "S"];
+
+    const state = {
+        panelMemberId: "",
+        panelMemberName: "",
+        selectedStudentKey: "",
+        selectedInterviewId: ""
+    };
+
+    function showStatus(type, html) {
+        var box = document.getElementById("statusBox");
+        box.className = type;
+        box.innerHTML = html;
+        box.style.display = "block";
+    }
+
+    function setButtonLoading(on) {
+        var btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.dataset.loading = on ? "1" : "0";
+        if (on) btn.textContent = "Submitting...";
+        else btn.textContent = "Submit";
+    }
+
+    function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name) || "";
+    }
+
+    function parseLS(key, fallback) {
+        try {
+            var raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function resolvePanelMemberFromId(panelMembersCatData) {
+        if (state.panelMemberName) return;
+        if (!state.panelMemberId) return;
+        var found = panelMembersCatData.find(function(m) {
+            var fac = m.Faculty || m;
+            return String(fac.ROWID) === String(state.panelMemberId);
+        });
+        if (found) {
+            var fac = found.Faculty || found;
+            state.panelMemberName = fac.Name || "";
+        }
+    }
+
+    function buildAssignedStudentsDropdown(assignmentsData) {
+        var studentSelect = document.getElementById("studentSelect");
+        studentSelect.innerHTML = '<option value="">Select a student</option>';
+
+        var studentKeys = Object.keys(assignmentsData || {}).filter(function(studentKey) {
+            var interviews = assignmentsData[studentKey] || {};
+            return Object.keys(interviews).some(function(interviewId) {
+                if (!interviewId || interviewId === "remarks" || interviewId === "remarksByPanel") return false;
+                if (interviewId.indexOf("remarks") === 0) return false;
+                return interviews[interviewId] === state.panelMemberName;
+            });
+        });
+
+        if (studentKeys.length === 0) {
+            studentSelect.disabled = true;
+            showStatus("error", "No students are assigned to this panel member yet.");
+            return [];
+        }
+
+        studentSelect.disabled = false;
+        studentKeys.sort(function(a, b) {
+            var da = a.split("_")[0] || "";
+            var db = b.split("_")[0] || "";
+            return da.localeCompare(db);
+        });
+
+        studentKeys.forEach(function(studentKey) {
+            var displayName = studentKey.includes("_") ? studentKey.split("_")[0] : studentKey;
+            var opt = document.createElement("option");
+            opt.value = studentKey;
+            opt.textContent = displayName;
+            studentSelect.appendChild(opt);
+        });
+
+        return studentKeys;
+    }
+
+    function findFacultyRowId(panelMembersCatData) {
+        if (state.panelMemberId) return state.panelMemberId;
+        var found = panelMembersCatData.find(function(m) {
+            var fac = m.Faculty || m;
+            return fac.Name === state.panelMemberName;
+        });
+        if (!found) return "";
+        var fac = found.Faculty || found;
+        return String(fac.ROWID || "");
+    }
+
+    function loadStudentEvaluation(studentKey, assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId) {
+        state.selectedStudentKey = studentKey;
+        state.selectedInterviewId = "";
+
+        var verdictSelect = document.getElementById("verdictSelect");
+        var remarksText = document.getElementById("remarksText");
+        var hiddenInterviewId = document.getElementById("selectedInterviewId");
+
+        var studentRowId = studentKey.includes("_") ? studentKey.split("_").slice(1).join("_") : studentKey;
+
+        var match = null;
+        var matchInterviewId = "";
+
+        for (var i = 0; i < interviewsCatData.length; i++) {
+            var entry = interviewsCatData[i];
+            var iv = entry.ZS28_Interviews || entry;
+            if (String(iv.Student) === String(studentRowId) && String(iv.Faculty) === String(facultyRowId)) {
+                match = iv;
+                matchInterviewId = String(iv.ROWID || entry.ROWID || "");
+                break;
+            }
+        }
+
+        var currentVerdict = match ? (match.Verdict || match.verdict || "") : "";
+        if (VERDICT_OPTIONS.indexOf(currentVerdict) === -1) currentVerdict = "";
+        verdictSelect.value = currentVerdict;
+
+        var currentRemarks = "";
+        if (match) {
+            currentRemarks = match.Remarks || match.remarks || match.remark || "";
+        }
+        if (!currentRemarks) {
+            var adj = assignmentsData[studentKey] || {};
+            currentRemarks = adj.remarks || "";
+        }
+        remarksText.value = currentRemarks;
+
+        state.selectedInterviewId = matchInterviewId;
+        hiddenInterviewId.value = matchInterviewId;
+
+        // Enable submit once we have a student + an interview record.
+        var canSubmit = !!matchInterviewId;
+        document.getElementById("submitBtn").disabled = !canSubmit;
+    }
+
+    async function submitEvaluation() {
+        var statusBox = document.getElementById("statusBox");
+
+        var studentKey = state.selectedStudentKey;
+        var interviewId = document.getElementById("selectedInterviewId").value || "";
+        var verdict = document.getElementById("verdictSelect").value || "";
+        var remarks = document.getElementById("remarksText").value || "";
+
+        if (!studentKey) {
+            showStatus("error", "Please select a student first.");
+            return;
+        }
+        if (!interviewId) {
+            showStatus("error", "No interview record found for this student and panel member.");
+            return;
+        }
+        if (!verdict) {
+            showStatus("error", "Please select a verdict.");
+            return;
+        }
+
+        try {
+            setButtonLoading(true);
+            showStatus("info", "Submitting verdict and remarks...");
+
+            var interviewsCatData = parseLS("interviewsCatData", []);
+            var assignmentsData = parseLS("assignmentsData", {});
+
+            var res = await fetch(BASE_API + "/interview/" + interviewId, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: interviewId,
+                    verdict: verdict,
+                    remarks: remarks,
+                    Remarks: remarks
+                })
+            });
+
+            if (!res.ok) throw new Error("Submit failed (HTTP " + res.status + ")");
+
+            // Update localStorage (optimistic) so other pages can reflect changes.
+            for (var i = 0; i < interviewsCatData.length; i++) {
+                var entry = interviewsCatData[i];
+                var iv = entry.ZS28_Interviews || entry;
+                var rowId = String(iv.ROWID || entry.ROWID || "");
+                if (rowId === String(interviewId)) {
+                    iv.Verdict = verdict;
+                    iv.Remarks = remarks;
+                    iv.remarks = remarks;
+                    break;
+                }
+            }
+            localStorage.setItem("interviewsCatData", JSON.stringify(interviewsCatData));
+
+            assignmentsData[studentKey] = assignmentsData[studentKey] || {};
+            assignmentsData[studentKey].remarks = remarks;
+            assignmentsData[studentKey].remarksByPanel = assignmentsData[studentKey].remarksByPanel || {};
+            assignmentsData[studentKey].remarksByPanel[state.panelMemberName] = remarks;
+            localStorage.setItem("assignmentsData", JSON.stringify(assignmentsData));
+
+            showStatus("success", "Submitted successfully for <strong>" + (studentKey.split("_")[0] || studentKey) + "</strong>.");
+        } catch (e) {
+            showStatus("error", "Submission failed: " + (e && e.message ? e.message : String(e)));
+        } finally {
+            setButtonLoading(false);
+            // keep button enabled only if interview record exists
+            document.getElementById("submitBtn").disabled = !state.selectedInterviewId;
+        }
+    }
+
+    (function init() {
+        var panelMemberNameParam = decodeURIComponent(getQueryParam("panelMemberName") || "");
+        var panelMemberIdParam = getQueryParam("panelMemberId") || "";
+
+        state.panelMemberName = localStorage.getItem("selectedPanelMemberName") || panelMemberNameParam || "";
+        state.panelMemberId = localStorage.getItem("selectedPanelMemberId") || panelMemberIdParam || "";
+
+        var panelMembersCatData = parseLS("panelMembersCatData", []);
+        var assignmentsData = parseLS("assignmentsData", {});
+        var interviewsCatData = parseLS("interviewsCatData", []);
+
+        resolvePanelMemberFromId(panelMembersCatData);
+
+        var panelMemberNameEl = document.getElementById("panelMemberName");
+        panelMemberNameEl.value = state.panelMemberName;
+
+        if (!state.panelMemberName) {
+            showStatus("error", "Panel member not selected. Open after selecting a recruitment drive and panel member in `setRecruitmentDrive.html`.");
+            return;
+        }
+
+        var facultyRowId = findFacultyRowId(panelMembersCatData);
+        if (!facultyRowId) {
+            showStatus("error", "Could not resolve faculty ID for the panel member.");
+            return;
+        }
+
+        if (!assignmentsData || Object.keys(assignmentsData).length === 0) {
+            showStatus("error", "No assignment data found. Load a recruitment drive first from `setRecruitmentDrive.html`.");
+            return;
+        }
+
+        var studentKeys = buildAssignedStudentsDropdown(assignmentsData);
+        if (!studentKeys || studentKeys.length === 0) return;
+
+        var studentSelect = document.getElementById("studentSelect");
+        studentSelect.addEventListener("change", function() {
+            var key = studentSelect.value;
+            if (!key) {
+                document.getElementById("submitBtn").disabled = true;
+                return;
+            }
+            loadStudentEvaluation(key, assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId);
+        });
+
+        // Load the first student by default.
+        loadStudentEvaluation(studentKeys[0], assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId);
+        document.getElementById("studentSelect").value = studentKeys[0];
+    })();
+</script>
+</body>
+</html>
+
