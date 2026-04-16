@@ -83,6 +83,14 @@
         <small class="upload-hint" id="driveHint" style="display:none; margin-top:0.4rem;"></small>
     </div>
 
+    <div class="form-group" style="margin-bottom:1rem;">
+        <label for="panelMemberSelect">Panel Members</label>
+        <select id="panelMemberSelect" disabled>
+            <option value="">Select a recruitment drive first</option>
+        </select>
+        <small class="upload-hint" id="panelHint" style="display:none; margin-top:0.4rem;"></small>
+    </div>
+
     <button class="btn-success" id="loadBtn" onclick="loadDrive()">
         Load &amp; Continue →
     </button>
@@ -92,6 +100,7 @@
 
 <script>
 const BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
+var drivesCache = [];
 
 /* ─── helpers ─────────────────────────────────────────────── */
 function showStatus(type, html) {
@@ -120,12 +129,84 @@ function stepState(idx, state) {
     if (el) el.className = state;
 }
 
+function resetPanelMemberSelect(placeholderText) {
+    var select = document.getElementById('panelMemberSelect');
+    var hint = document.getElementById('panelHint');
+    select.innerHTML = '';
+
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = placeholderText || 'Select a recruitment drive first';
+    select.appendChild(opt);
+    select.disabled = true;
+
+    hint.style.display = 'none';
+    hint.textContent = '';
+}
+
+async function fetchAllDrives() {
+    if (drivesCache.length > 0) return drivesCache;
+    var res = await fetch(BASE_URL + '/recruitment-drive');
+    if (!res.ok) throw new Error('Drive lookup failed (HTTP ' + res.status + ')');
+    var all = await res.json();
+    drivesCache = Array.isArray(all) ? all : [];
+    return drivesCache;
+}
+
+async function loadPanelMembersForSelectedDrive() {
+    var name = document.getElementById('driveInput').value.trim();
+    if (!name) {
+        resetPanelMemberSelect('Select a recruitment drive first');
+        return;
+    }
+
+    try {
+        var allDrives = await fetchAllDrives();
+        var matched = allDrives.find(function(row) {
+            var d = row.RecruitmentDrive || row;
+            return (d.recruitment_name || '').toLowerCase() === name.toLowerCase();
+        });
+
+        if (!matched) {
+            resetPanelMemberSelect('Drive not found');
+            return;
+        }
+
+        var driveObj = matched.RecruitmentDrive || matched;
+        var driveId = String(driveObj.ROWID);
+        var facRes = await fetch(BASE_URL + '/faculty?recruitment_drive_id=' + driveId);
+        if (!facRes.ok) throw new Error('Faculty fetch failed (HTTP ' + facRes.status + ')');
+
+        var panelMembers = await facRes.json();
+        var select = document.getElementById('panelMemberSelect');
+        var hint = document.getElementById('panelHint');
+        select.innerHTML = '';
+
+        var defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = panelMembers.length > 0 ? 'Select panel member' : 'No panel members found';
+        select.appendChild(defaultOpt);
+
+        panelMembers.forEach(function(member) {
+            if (!member || !member.Faculty) return;
+            var option = document.createElement('option');
+            option.value = String(member.Faculty.ROWID || '');
+            option.textContent = member.Faculty.Name || 'Unnamed panel member';
+            select.appendChild(option);
+        });
+
+        select.disabled = panelMembers.length === 0;
+        hint.textContent = panelMembers.length + ' panel member' + (panelMembers.length === 1 ? '' : 's') + ' loaded for this drive.';
+        hint.style.display = 'block';
+    } catch (e) {
+        resetPanelMemberSelect('Unable to load panel members');
+    }
+}
+
 /* ─── page load: prefetch all drive names for the datalist ── */
 (async function prefetchDrives() {
     try {
-        var res = await fetch(BASE_URL + '/recruitment-drive');
-        if (!res.ok) return;
-        var all = await res.json();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
+        var all = await fetchAllDrives();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
         var dl  = document.getElementById('driveList');
 
         (Array.isArray(all) ? all : []).forEach(function(row) {
@@ -145,6 +226,9 @@ function stepState(idx, state) {
         }
     } catch (e) { /* datalist is a nice-to-have; silently ignore */ }
 })();
+
+document.getElementById('driveInput').addEventListener('change', loadPanelMembersForSelectedDrive);
+document.getElementById('driveInput').addEventListener('blur', loadPanelMembersForSelectedDrive);
 
 /* ─── main loader ─────────────────────────────────────────── */
 function clearDriveData() {
@@ -184,9 +268,7 @@ async function loadDrive() {
         /* ── Step 0: GET all drives, find match client-side by name ── */
         stepState(0, 'active');
 
-        var driveRes = await fetch(BASE_URL + '/recruitment-drive');
-        if (!driveRes.ok) throw new Error('Drive lookup failed (HTTP ' + driveRes.status + ')');
-        var allDrives = await driveRes.json();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
+        var allDrives = await fetchAllDrives();   // [{RecruitmentDrive:{ROWID, recruitment_name}}, ...]
 
         var matched = (Array.isArray(allDrives) ? allDrives : []).find(function(row) {
             var d = row.RecruitmentDrive || row;
