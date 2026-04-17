@@ -85,8 +85,14 @@
 </head>
 
 <body>
-    <button onclick="progressTracker.goToConfigPage()" class="btn-secondary" style="margin:1rem;">  
-        Back to Interview Assignment</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:1rem;">
+        <button onclick="progressTracker.goToConfigPage()" class="btn-secondary">
+            Back to Interview Assignment
+        </button>
+        <button id="closeDriveBtn" class="btn-danger" style="width:auto; height:auto; padding:0.65rem 1rem;" onclick="closeRecruitmentDrive()">
+            Close Recruitment Drive
+        </button>
+    </div>
 <div class="container">
     <h1>Interview Progress</h1>
 
@@ -152,6 +158,41 @@
 </div>
 
 <script>
+    const BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
+
+    async function closeRecruitmentDrive() {
+        var driveId = localStorage.getItem('recruitmentDriveId');
+        var closeBtn = document.getElementById('closeDriveBtn');
+        if (!driveId) {
+            alert('Recruitment drive ID not found. Please load a drive first.');
+            return;
+        }
+
+        try {
+            closeBtn.disabled = true;
+            closeBtn.textContent = 'Closing...';
+
+            var response = await fetch(BASE_URL + '/updateRecruitmentDrive', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recruitment_drive_id: driveId,
+                    status: 'Closed'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to close recruitment drive (HTTP ' + response.status + ')');
+            }
+
+            alert('Recruitment drive closed successfully.');
+        } catch (err) {
+            alert('Unable to close recruitment drive: ' + err.message);
+        } finally {
+            closeBtn.disabled = false;
+            closeBtn.textContent = 'Close Recruitment Drive';
+        }
+    }
 
     document.getElementById('downloadBtn').addEventListener('click', () => {
         // simple export of currently loaded dataToLoad if present
