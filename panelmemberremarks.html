@@ -77,7 +77,8 @@
         panelMemberId: "",
         panelMemberName: "",
         selectedStudentKey: "",
-        selectedInterviewId: ""
+        selectedInterviewId: "",
+        filteredInterviews: []
     };
 
     function showStatus(type, html) {
@@ -123,33 +124,45 @@
         }
     }
 
-    function buildAssignedStudentsDropdown(assignmentsData) {
+    function buildAssignedStudentsDropdownFromInterviews(filteredInterviews, studentsCatData) {
         var studentSelect = document.getElementById("studentSelect");
         studentSelect.innerHTML = '<option value="">Select a student</option>';
 
-        var studentKeys = Object.keys(assignmentsData || {}).filter(function(studentKey) {
-            var interviews = assignmentsData[studentKey] || {};
-            return Object.keys(interviews).some(function(interviewId) {
-                if (!interviewId || interviewId === "remarks" || interviewId === "remarksByPanel") return false;
-                if (interviewId.indexOf("remarks") === 0) return false;
-                return interviews[interviewId] === state.panelMemberName;
+        var uniqueStudentKeys = [];
+        var seen = {};
+
+        (filteredInterviews || []).forEach(function(entry) {
+            var iv = entry.ZS28_Interviews || entry;
+            var studentId = String(iv.Student || "");
+            if (!studentId) return;
+            if (seen[studentId]) return;
+
+            var studentObj = studentsCatData.find(function(s) {
+                var st = s.ZS28_Students || s;
+                return String(st.ROWID) === studentId;
             });
+            if (!studentObj) return;
+
+            var st = studentObj.ZS28_Students || studentObj;
+            var studentKey = (st.Student_Name || "Student") + "_" + studentId;
+            uniqueStudentKeys.push(studentKey);
+            seen[studentId] = true;
         });
 
-        if (studentKeys.length === 0) {
+        if (uniqueStudentKeys.length === 0) {
             studentSelect.disabled = true;
             showStatus("error", "No students are assigned to this panel member yet.");
             return [];
         }
 
         studentSelect.disabled = false;
-        studentKeys.sort(function(a, b) {
+        uniqueStudentKeys.sort(function(a, b) {
             var da = a.split("_")[0] || "";
             var db = b.split("_")[0] || "";
             return da.localeCompare(db);
         });
 
-        studentKeys.forEach(function(studentKey) {
+        uniqueStudentKeys.forEach(function(studentKey) {
             var displayName = studentKey.includes("_") ? studentKey.split("_")[0] : studentKey;
             var opt = document.createElement("option");
             opt.value = studentKey;
@@ -157,7 +170,7 @@
             studentSelect.appendChild(opt);
         });
 
-        return studentKeys;
+        return uniqueStudentKeys;
     }
 
     function findFacultyRowId(panelMembersCatData) {
@@ -171,7 +184,7 @@
         return String(fac.ROWID || "");
     }
 
-    function loadStudentEvaluation(studentKey, assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId) {
+    function loadStudentEvaluation(studentKey, assignmentsData) {
         state.selectedStudentKey = studentKey;
         state.selectedInterviewId = "";
 
@@ -181,18 +194,12 @@
 
         var studentRowId = studentKey.includes("_") ? studentKey.split("_").slice(1).join("_") : studentKey;
 
-        var match = null;
-        var matchInterviewId = "";
-
-        for (var i = 0; i < interviewsCatData.length; i++) {
-            var entry = interviewsCatData[i];
+        var matchEntry = (state.filteredInterviews || []).find(function(entry) {
             var iv = entry.ZS28_Interviews || entry;
-            if (String(iv.Student) === String(studentRowId) && String(iv.Faculty) === String(facultyRowId)) {
-                match = iv;
-                matchInterviewId = String(iv.ROWID || entry.ROWID || "");
-                break;
-            }
-        }
+            return String(iv.Student) === String(studentRowId);
+        });
+        var match = matchEntry ? (matchEntry.ZS28_Interviews || matchEntry) : null;
+        var matchInterviewId = match ? String(match.ROWID || matchEntry.ROWID || "") : "";
 
         var currentVerdict = match ? (match.Verdict || match.verdict || "") : "";
         if (VERDICT_OPTIONS.indexOf(currentVerdict) === -1) currentVerdict = "";
@@ -287,7 +294,7 @@
         }
     }
 
-    (function init() {
+    (async function init() {
         var panelMemberNameParam = decodeURIComponent(getQueryParam("panelMemberName") || "");
         var panelMemberIdParam = getQueryParam("panelMemberId") || "";
 
@@ -296,7 +303,7 @@
 
         var panelMembersCatData = parseLS("panelMembersCatData", []);
         var assignmentsData = parseLS("assignmentsData", {});
-        var interviewsCatData = parseLS("interviewsCatData", []);
+        var studentsCatData = parseLS("studentsCatData", []);
 
         resolvePanelMemberFromId(panelMembersCatData);
 
@@ -314,26 +321,48 @@
             return;
         }
 
-        if (!assignmentsData || Object.keys(assignmentsData).length === 0) {
-            showStatus("error", "No assignment data found. Load a recruitment drive first from `setRecruitmentDrive.html`.");
+        var recruitmentDriveId = localStorage.getItem("recruitmentDriveId") || "";
+        if (!recruitmentDriveId) {
+            showStatus("error", "Recruitment drive is not selected. Load a drive first from `setRecruitmentDrive.html`.");
             return;
         }
 
-        var studentKeys = buildAssignedStudentsDropdown(assignmentsData);
+        try {
+            // 1) Fetch interviews for selected recruitment drive.
+            var interviewRes = await fetch(BASE_API + "/interview?recruitment_drive_id=" + encodeURIComponent(recruitmentDriveId));
+            if (!interviewRes.ok) throw new Error("Failed to load interviews (HTTP " + interviewRes.status + ")");
+
+            var allInterviews = await interviewRes.json();
+            localStorage.setItem("interviewsCatData", JSON.stringify(allInterviews));
+
+            // 2) Filter interviews for selected panel member.
+            state.filteredInterviews = (Array.isArray(allInterviews) ? allInterviews : []).filter(function(entry) {
+                var iv = entry.ZS28_Interviews || entry;
+                return String(iv.Faculty) === String(facultyRowId);
+            });
+        } catch (e) {
+            showStatus("error", "Unable to fetch interviews: " + (e && e.message ? e.message : String(e)));
+            return;
+        }
+
+        var studentKeys = buildAssignedStudentsDropdownFromInterviews(state.filteredInterviews, studentsCatData);
         if (!studentKeys || studentKeys.length === 0) return;
 
         var studentSelect = document.getElementById("studentSelect");
         studentSelect.addEventListener("change", function() {
             var key = studentSelect.value;
             if (!key) {
+                document.getElementById("selectedInterviewId").value = "";
+                state.selectedInterviewId = "";
                 document.getElementById("submitBtn").disabled = true;
                 return;
             }
-            loadStudentEvaluation(key, assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId);
+            // 3) Hidden field selectedInterviewId gets populated on student change.
+            loadStudentEvaluation(key, assignmentsData);
         });
 
         // Load the first student by default.
-        loadStudentEvaluation(studentKeys[0], assignmentsData, panelMembersCatData, interviewsCatData, facultyRowId);
+        loadStudentEvaluation(studentKeys[0], assignmentsData);
         document.getElementById("studentSelect").value = studentKeys[0];
     })();
 </script>
