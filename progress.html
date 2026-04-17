@@ -64,10 +64,14 @@
 
 <script>
     let dataToLoad;
-    function refreshTable() {
+    async function refreshTable() {
         if (window.progressTracker && progressTracker.fetchData) {
+            if (progressTracker.syncDriveStatus) {
+                await progressTracker.syncDriveStatus();
+            }
             var assignmentsData = progressTracker.fetchData();
             dataToLoad = assignmentsData;
+            if (!dataToLoad || Object.keys(dataToLoad).length === 0) return;
             var firstKey = Object.keys(dataToLoad)[0];
             const maxInterviews = Object.keys(dataToLoad[firstKey]).length;
             progressTracker.clearExistingDOM();
@@ -144,6 +148,7 @@
                             <th>Student Name</th>
                             <th>Faculty Name</th>
                             <th>Verdict</th>
+                            <th>Remarks</th>
                             <th>Final Result</th>
                         </tr>
                     </thead>
@@ -185,6 +190,11 @@
                 throw new Error('Failed to close recruitment drive (HTTP ' + response.status + ')');
             }
 
+            localStorage.setItem('recruitmentDriveStatus', 'Closed');
+            if (window.progressTracker && progressTracker.syncDriveStatus) {
+                await progressTracker.syncDriveStatus();
+            }
+            await refreshTable();
             alert('Recruitment drive closed successfully.');
         } catch (err) {
             alert('Unable to close recruitment drive: ' + err.message);
