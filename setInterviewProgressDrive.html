@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Interview Progress Drive</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 100%);
+        }
+
+        .load-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(15,23,42,0.10);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .load-card h1 { font-size: 1.6rem; margin-bottom: 0.4rem; color: #0f172a; }
+        .load-card .subtitle { font-size: 0.92rem; color: #64748b; margin-bottom: 2rem; }
+
+        #statusBox {
+            display: none;
+            border-radius: 0.5rem;
+            padding: 0.85rem 1rem;
+            font-size: 0.9rem;
+            margin-top: 1.25rem;
+            line-height: 1.5;
+        }
+        #statusBox.info    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+        #statusBox.success { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+        #statusBox.error   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+
+        .steps { list-style: none; margin-top: 0.5rem; }
+        .steps li {
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.3rem 0; font-size: 0.875rem;
+            color: #475569; opacity: 0.4; transition: opacity 0.3s;
+        }
+        .steps li.active { opacity: 1; color: #1d4ed8; }
+        .steps li.done   { opacity: 1; color: #059669; }
+        .steps li.failed { opacity: 1; color: #dc2626; }
+        .steps li .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; flex-shrink: 0;
+        }
+
+        .spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-success { width: 100%; margin-top: 0; }
+    </style>
+</head>
+<body>
+<div class="load-card">
+    <h1>📈 Load Interview Progress</h1>
+    <p class="subtitle">Choose a recruitment drive to preload all interview progress data for coordinator view.</p>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+        <label for="driveInput">Recruitment Drive Name</label>
+        <input
+            type="text"
+            id="driveInput"
+            list="driveList"
+            placeholder="e.g. Campus Drive 2025"
+            onkeypress="if(event.key==='Enter') loadDriveForProgress()"
+            autocomplete="off"
+        />
+        <datalist id="driveList"></datalist>
+        <small class="upload-hint" id="driveHint" style="display:none; margin-top:0.4rem;"></small>
+    </div>
+
+    <button class="btn-success" id="loadBtn" onclick="loadDriveForProgress()">
+        Load &amp; Continue →
+    </button>
+
+    <div id="statusBox"></div>
+</div>
+
+<script>
+const BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
+var drivesCache = [];
+
+function showStatus(type, html) {
+    var box = document.getElementById("statusBox");
+    box.className = type;
+    box.innerHTML = html;
+    box.style.display = "block";
+}
+
+function setLoading(on) {
+    var btn = document.getElementById("loadBtn");
+    btn.disabled = on;
+    btn.innerHTML = on ? '<span class="spinner"></span> Loading...' : 'Load &amp; Continue →';
+}
+
+function buildSteps(labels) {
+    return '<ul class="steps">' + labels.map(function(l, i) {
+        return '<li id="step' + i + '"><span class="dot"></span>' + l + '</li>';
+    }).join('') + '</ul>';
+}
+
+function stepState(idx, state) {
+    var el = document.getElementById("step" + idx);
+    if (el) el.className = state;
+}
+
+async function fetchAllDrives() {
+    if (drivesCache.length > 0) return drivesCache;
+    var res = await fetch(BASE_URL + '/recruitment-drive');
+    if (!res.ok) throw new Error('Drive lookup failed (HTTP ' + res.status + ')');
+    var all = await res.json();
+    drivesCache = Array.isArray(all) ? all : [];
+    return drivesCache;
+}
+
+function clearDriveData() {
+    var keys = [
+        'studentsData',
+        'studentsCatData',
+        'panelMembersData',
+        'panelMembersCatData',
+        'interviewsCatData',
+        'assignmentsData',
+        'interviewsData',
+        'verdicts',
+        'resultsCatData',
+        'selectedPanelMemberId',
+        'selectedPanelMemberName'
+    ];
+    keys.forEach(function(k) { localStorage.removeItem(k); });
+}
+
+(async function prefetchDrives() {
+    try {
+        var all = await fetchAllDrives();
+        var dl = document.getElementById("driveList");
+        all.forEach(function(row) {
+            var d = row.RecruitmentDrive || row;
+            if (d.recruitment_name) {
+                var opt = document.createElement("option");
+                opt.value = d.recruitment_name;
+                dl.appendChild(opt);
+            }
+        });
+        var count = dl.childElementCount;
+        if (count > 0) {
+            var hint = document.getElementById("driveHint");
+            hint.textContent = count + ' drive' + (count > 1 ? 's' : '') + ' available — start typing to filter.';
+            hint.style.display = "block";
+        }
+    } catch (e) { /* ignore */ }
+})();
+
+async function loadDriveForProgress() {
+    clearDriveData();
+    var name = document.getElementById("driveInput").value.trim();
+    if (!name) {
+        showStatus("error", "⚠️ Please enter a recruitment drive name.");
+        return;
+    }
+
+    setLoading(true);
+    showStatus("info", buildSteps([
+        'Finding recruitment drive...',
+        'Fetching students...',
+        'Fetching faculty / panel members...',
+        'Fetching interview assignments...',
+        'Building assignments & verdicts...',
+        'Saving to session...'
+    ]));
+
+    try {
+        stepState(0, 'active');
+        var allDrives = await fetchAllDrives();
+        var matched = (Array.isArray(allDrives) ? allDrives : []).find(function(row) {
+            var d = row.RecruitmentDrive || row;
+            return (d.recruitment_name || '').toLowerCase() === name.toLowerCase();
+        });
+        if (!matched) throw new Error('No recruitment drive found with name "' + name + '"');
+
+        var driveObj = matched.RecruitmentDrive || matched;
+        var driveId = String(driveObj.ROWID);
+        stepState(0, 'done');
+
+        stepState(1, 'active');
+        var studentsRes = await fetch(BASE_URL + '/student?recruitment_drive_id=' + driveId);
+        if (!studentsRes.ok) throw new Error('Students fetch failed (HTTP ' + studentsRes.status + ')');
+        var studentsCatData = await studentsRes.json();
+        var studentNames = studentsCatData.map(function(s) {
+            var st = s.ZS28_Students || s;
+            return st.Student_Name + '_' + st.ROWID;
+        });
+        stepState(1, 'done');
+
+        stepState(2, 'active');
+        var facRes = await fetch(BASE_URL + '/faculty?recruitment_drive_id=' + driveId);
+        if (!facRes.ok) throw new Error('Faculty fetch failed (HTTP ' + facRes.status + ')');
+        var panelMembersCatData = await facRes.json();
+        var panelNames = panelMembersCatData.map(function(f) { return (f.Faculty || f).Name; });
+        stepState(2, 'done');
+
+        stepState(3, 'active');
+        var interviewsRes = await fetch(BASE_URL + '/interview?recruitment_drive_id=' + driveId);
+        if (!interviewsRes.ok) throw new Error('Interviews fetch failed (HTTP ' + interviewsRes.status + ')');
+        var interviewsCatData = await interviewsRes.json();
+        stepState(3, 'done');
+
+        stepState(4, 'active');
+        var assignmentsData = {};
+        var verdicts = {};
+
+        studentsCatData.forEach(function(s) {
+            var st = s.ZS28_Students || s;
+            var uniqueKey = st.Student_Name + '_' + st.ROWID;
+            assignmentsData[uniqueKey] = {};
+        });
+
+        interviewsCatData.forEach(function(ivtemp) {
+            var iv = ivtemp.ZS28_Interviews || ivtemp;
+            var stuObj = studentsCatData.find(function(s) { return String((s.ZS28_Students || s).ROWID) === String(iv.Student); });
+            var facObj = panelMembersCatData.find(function(f) { return String((f.Faculty || f).ROWID) === String(iv.Faculty); });
+            if (!stuObj) return;
+
+            var studentObj = stuObj.ZS28_Students || stuObj;
+            var uniqueKey = studentObj.Student_Name + '_' + studentObj.ROWID;
+            var facultyName = facObj ? (facObj.Faculty || facObj).Name : '';
+            var interviewId = String(iv.ROWID);
+
+            assignmentsData[uniqueKey][interviewId] = facultyName;
+
+            var verdictVal = iv.Verdict || iv.verdict || '';
+            if (verdictVal !== '') {
+                if (!verdicts[studentObj.Student_Name]) verdicts[studentObj.Student_Name] = {};
+                verdicts[studentObj.Student_Name][interviewId] = verdictVal;
+            }
+        });
+
+        var allInterviewIds = Array.from(new Set(interviewsCatData.map(function(iv) {
+            var obj = iv.ZS28_Interviews || iv;
+            return String(obj.ROWID);
+        })));
+        var interviewsData = allInterviewIds.map(function(id, idx) {
+            return { id: id, name: 'Interview-' + (idx + 1), isHead: false };
+        });
+        stepState(4, 'done');
+
+        stepState(5, 'active');
+        localStorage.setItem('recruitmentDriveId', driveId);
+        localStorage.setItem('recruitmentDriveName', name);
+        localStorage.setItem('studentsData', JSON.stringify(studentNames));
+        localStorage.setItem('studentsCatData', JSON.stringify(studentsCatData));
+        localStorage.setItem('panelMembersData', JSON.stringify(panelNames));
+        localStorage.setItem('panelMembersCatData', JSON.stringify(panelMembersCatData));
+        localStorage.setItem('interviewsCatData', JSON.stringify(interviewsCatData));
+        localStorage.setItem('assignmentsData', JSON.stringify(assignmentsData));
+        localStorage.setItem('interviewsData', JSON.stringify(interviewsData));
+        localStorage.setItem('verdicts', JSON.stringify(verdicts));
+
+        try {
+            var resultsRes = await fetch(BASE_URL + '/result?recruitment_drive_id=' + driveId);
+            var resultsCatData = resultsRes.ok ? await resultsRes.json() : [];
+            localStorage.setItem('resultsCatData', JSON.stringify(resultsCatData));
+        } catch (e) {
+            localStorage.setItem('resultsCatData', JSON.stringify([]));
+        }
+
+        stepState(5, 'done');
+        showStatus(
+            'success',
+            '✅ Drive <strong>' + name + '</strong> loaded!<br>' +
+            '<small>' + studentNames.length + ' students · ' + panelNames.length + ' faculty · ' + interviewsCatData.length + ' interviews</small><br>' +
+            '<small style="color:#059669;">Redirecting to interview progress page…</small>'
+        );
+        setTimeout(function() { window.location.href = 'interviewProgress.html'; }, 1200);
+    } catch (err) {
+        document.querySelectorAll('.steps li.active').forEach(function(el) { el.className = 'failed'; });
+        showStatus('error', '❌ <strong>Error:</strong> ' + err.message);
+        setLoading(false);
+    }
+}
+</script>
+</body>
+</html>
+
