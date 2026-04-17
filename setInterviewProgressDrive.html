@@ -282,9 +282,9 @@ async function loadDriveForProgress() {
             'success',
             '✅ Drive <strong>' + name + '</strong> loaded!<br>' +
             '<small>' + studentNames.length + ' students · ' + panelNames.length + ' faculty · ' + interviewsCatData.length + ' interviews</small><br>' +
-            '<small style="color:#059669;">Redirecting to interview progress page…</small>'
+            '<small style="color:#059669;">Redirecting to interview assignment page…</small>'
         );
-        setTimeout(function() { window.location.href = 'interviewProgress.html'; }, 1200);
+        setTimeout(function() { window.location.href = 'interviewassign.html'; }, 1200);
     } catch (err) {
         document.querySelectorAll('.steps li.active').forEach(function(el) { el.className = 'failed'; });
         showStatus('error', '❌ <strong>Error:</strong> ' + err.message);
