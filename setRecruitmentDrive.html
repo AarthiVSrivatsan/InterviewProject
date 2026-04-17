@@ -358,6 +358,19 @@ async function loadDrive() {
         localStorage.setItem('studentsCatData',      JSON.stringify(studentsCatData));
         localStorage.setItem('panelMembersData',     JSON.stringify(panelNames));
         localStorage.setItem('panelMembersCatData',  JSON.stringify(panelMembersCatData));
+
+        // Persist the currently selected panel member so the evaluation page
+        // can preload and keep it frozen.
+        var panelSelect = document.getElementById('panelMemberSelect');
+        if (panelSelect && panelSelect.value) {
+            var selectedOption = panelSelect.options[panelSelect.selectedIndex];
+            localStorage.setItem('selectedPanelMemberId', panelSelect.value);
+            localStorage.setItem('selectedPanelMemberName', selectedOption ? selectedOption.textContent : '');
+        } else {
+            localStorage.removeItem('selectedPanelMemberId');
+            localStorage.removeItem('selectedPanelMemberName');
+        }
+
         localStorage.setItem('interviewsCatData',    JSON.stringify(interviewsCatData));
         localStorage.setItem('assignmentsData',      JSON.stringify(assignmentsData));
         localStorage.setItem('interviewsData',       JSON.stringify(interviewsData));
@@ -368,9 +381,9 @@ async function loadDrive() {
         showStatus('success',
             '\u2705 Drive <strong>' + name + '</strong> loaded!<br>' +
             '<small>' + studentNames.length + ' students \u00b7 ' + panelNames.length + ' faculty \u00b7 ' + interviewsCatData.length + ' interviews</small><br>' +
-            '<small style="color:#059669;">Redirecting to interview assignment page\u2026</small>'
+            '<small style="color:#059669;">Redirecting to panel member evaluation page\u2026</small>'
         );
-        setTimeout(function() { window.location.href = 'interviewassign.html'; }, 1200);
+        setTimeout(function() { window.location.href = 'panelmemberremarks.html'; }, 1200);
 
     } catch (err) {
         document.querySelectorAll('.steps li.active').forEach(function(el) { el.className = 'failed'; });
