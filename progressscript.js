@@ -106,21 +106,8 @@ progressTracker.findHighestNumberOfInterviews = function(data) {
 }
 
 progressTracker.renderHeader = function(maxInterviews) {
-    var firstRowHTML = document.querySelector('#addAfterTh');
-    var secondRowHTML = document.querySelector('#addAfterThSpan');
-    for(var i=1;i<maxInterviews;i++) {
-        var thFaculty = document.createElement('th');
-        thFaculty.className = "header-span";
-        thFaculty.colSpan = "2";
-        thFaculty.innerText = "Faculty and Verdict";
-        firstRowHTML.after(thFaculty);
-        var thFacultyName = document.createElement('th');
-        thFacultyName.innerText = "FacultyName";
-        secondRowHTML.appendChild(thFacultyName);
-        var thVerdict = document.createElement('th');
-        thVerdict.innerText = "Verdict";
-        secondRowHTML.after(thVerdict);
-    }
+    // Header is static in grouped-row layout.
+    return maxInterviews;
 }
 progressTracker.showCount = function() {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
@@ -215,57 +202,116 @@ progressTracker.updateFinalResult = function(selectElem) {
 };
 progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
-    var studentAssignments = Object.keys(data).forEach(function(key) {
-        var studentName = key;
-        var interviews = data[key];
-        var displayName = studentName.split('_')[0];
-        var rowHTML = progressTracker.TEMPLATE_HTML.replace('${0}', displayName);
-        var facultyVerdicts = Object.keys(interviews);
-        if(facultyVerdicts.length > 0) {
-            for(var j=0;j<facultyVerdicts.length;j++) {
-                var facultyName = interviews[facultyVerdicts[j]];
-                var verdict = "In Progress";
+    var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
+    var tbody = document.querySelector('#progress-table tbody');
+    if (!tbody) return;
 
+    tbody.innerHTML = '';
+
+    Object.keys(data).forEach(function(key) {
+        var studentName = key;
+        var interviews = data[key] || {};
+        var displayName = studentName.split('_')[0];
+        var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
+        var interviewIds = Object.keys(interviews).filter(function(k) { return k !== 'remarks' && k !== 'remarksByPanel'; });
+        var reviewRowCount = Math.max(interviewIds.length, 1);
+
+        for (var j = 0; j < reviewRowCount; j++) {
+            var tr = document.createElement('tr');
+            tr.setAttribute('rel', 'appended');
+            if (j === 0) tr.classList.add('group-start');
+
+            if (j === 0) {
+                var studentTd = document.createElement('td');
+                studentTd.textContent = displayName;
+                studentTd.rowSpan = reviewRowCount + 1; // + final result row
+                tr.appendChild(studentTd);
+            }
+
+            var interviewId = interviewIds[j] || '';
+            var facultyName = interviewId ? (interviews[interviewId] || '') : '';
+            var verdict = 'In Progress';
+
+            if (interviewId) {
                 var ivEntry = interviewsCatData.find(function(entry) {
                     var iv = entry.ZS28_Interviews || entry;
-                    var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
-                    var facObj = panelData.find(function(f) { return String((f.Faculty||f).ROWID) === String(iv.Faculty); });
-                    var facNameInEntry = facObj ? (facObj.Faculty||facObj).Name : '';
-                    var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
+                    var facObj = panelData.find(function(f) { return String((f.Faculty || f).ROWID) === String(iv.Faculty); });
+                    var facNameInEntry = facObj ? (facObj.Faculty || facObj).Name : '';
                     return facNameInEntry === facultyName && String(iv.Student) === String(studentROWID);
-                    });
+                });
                 if (ivEntry) {
                     var ivData = ivEntry.ZS28_Interviews || ivEntry;
                     if (ivData.Verdict && ivData.Verdict !== '' && ivData.Verdict !== 'undefined') {
                         verdict = ivData.Verdict;
                     }
                 }
-                var domToAppend = progressTracker.FACULTY_VERDICT_TEMPLATE;
-                className = (verdict == "In Progress") ? "inprogress" : "done";
-                if(facultyName != "") {
-                    domToAppend = domToAppend.replace('${2}', className);
-                    domToAppend = domToAppend.replace('${3}', facultyVerdicts[j] + '_' + studentName);
-                    domToAppend = domToAppend.replace("value='"+verdict+"'", "value='"+verdict+"' selected");
-                    if(verdict == "In Progress") {
-                        domToAppend = domToAppend.replace('disabled', "");
-                    }
-                }
-                rowHTML += domToAppend.replace('${0}', facultyName);
             }
-            var resultsCatData = localStorage.getItem('resultsCatData') ? JSON.parse(localStorage.getItem('resultsCatData')) : [];
-            var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
-            var resultEntry = resultsCatData.find(function(r) {
-                var res = r.Results || r;
-                return String(res.student) === String(studentROWID);
+
+            var facultyTd = document.createElement('td');
+            facultyTd.setAttribute('rel', 'appended');
+            facultyTd.className = (verdict === 'In Progress') ? 'inprogress' : 'done';
+            facultyTd.textContent = facultyName || '--';
+            tr.appendChild(facultyTd);
+
+            var verdictTd = document.createElement('td');
+            verdictTd.setAttribute('rel', 'appended');
+            var select = document.createElement('select');
+            select.id = (interviewId || 'na') + '_' + studentName;
+            select.setAttribute('onchange', 'progressTracker.updateColorCode(this)');
+            select.disabled = !facultyName || !interviewId || verdict !== 'In Progress';
+
+            ['In Progress', 'T', 'C+', 'C', 'S+', 'S'].forEach(function(v) {
+                var option = document.createElement('option');
+                option.value = v;
+                option.textContent = v;
+                if (v === verdict) option.selected = true;
+                select.appendChild(option);
             });
-            var currentStatus = resultEntry ? (resultEntry.Results || resultEntry).status || '' : '';
-            var resultHTML = progressTracker.FINAL_RESULT_TEMPLATE
-                .replace('${1}', studentName)
-                .replace('value=\'' + currentStatus + '\'', 'value=\'' + currentStatus + '\' selected');
-            rowHTML += resultHTML;
-            rowHTML += progressTracker.END_TR;
+            verdictTd.appendChild(select);
+            tr.appendChild(verdictTd);
+
+            if (j === 0) {
+                var placeholderResultTd = document.createElement('td');
+                placeholderResultTd.textContent = '--';
+                tr.appendChild(placeholderResultTd);
+            }
+
+            tbody.appendChild(tr);
         }
-        document.querySelector('#progress-table').innerHTML += rowHTML;
-        progressTracker.showCount();
+
+        var resultTr = document.createElement('tr');
+        resultTr.setAttribute('rel', 'appended');
+        resultTr.classList.add('group-result-row');
+
+        var resultLabelTd = document.createElement('td');
+        resultLabelTd.colSpan = 2;
+        resultLabelTd.className = 'group-result-label';
+        resultLabelTd.textContent = 'Final Result';
+        resultTr.appendChild(resultLabelTd);
+
+        var resultsCatData = localStorage.getItem('resultsCatData') ? JSON.parse(localStorage.getItem('resultsCatData')) : [];
+        var resultEntry = resultsCatData.find(function(r) {
+            var res = r.Results || r;
+            return String(res.student) === String(studentROWID);
+        });
+        var currentStatus = resultEntry ? (resultEntry.Results || resultEntry).status || '' : '';
+
+        var resultTd = document.createElement('td');
+        var resultSelect = document.createElement('select');
+        resultSelect.id = 'result_' + studentName;
+        resultSelect.setAttribute('onchange', 'progressTracker.updateFinalResult(this)');
+        ['', 'Selected', 'Rejected', 'Waitlist'].forEach(function(status) {
+            var option = document.createElement('option');
+            option.value = status;
+            option.textContent = status || '--';
+            if (status === currentStatus) option.selected = true;
+            resultSelect.appendChild(option);
+        });
+        resultTd.appendChild(resultSelect);
+        resultTr.appendChild(resultTd);
+
+        tbody.appendChild(resultTr);
     });
+
+    progressTracker.showCount();
 }
