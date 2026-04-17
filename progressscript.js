@@ -1,7 +1,29 @@
 var progressTracker = {};
+progressTracker.BASE_URL = "https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function";
 progressTracker.fetchData = function() {
     var data = JSON.parse(localStorage.getItem('assignmentsData'));
     return data;
+}
+progressTracker.isDriveClosed = function() {
+    return String(localStorage.getItem('recruitmentDriveStatus') || '').toLowerCase() === 'closed';
+}
+progressTracker.syncDriveStatus = async function() {
+    var driveId = localStorage.getItem('recruitmentDriveId');
+    if (!driveId) return;
+    try {
+        var res = await fetch(progressTracker.BASE_URL + '/recruitment-drive');
+        if (!res.ok) return;
+        var all = await res.json();
+        var matched = (Array.isArray(all) ? all : []).find(function(row) {
+            var d = row.RecruitmentDrive || row;
+            return String(d.ROWID) === String(driveId);
+        });
+        if (!matched) return;
+        var driveObj = matched.RecruitmentDrive || matched;
+        if (driveObj.status) localStorage.setItem('recruitmentDriveStatus', driveObj.status);
+    } catch (e) {
+        // Keep existing localStorage status if API fails.
+    }
 }
 
 progressTracker.clearExistingDOM = function() {
@@ -76,11 +98,9 @@ progressTracker.fetchStudentDetails = function(studentName){
 }
 progressTracker.updateInterview = function(selInterview, verdict) {
     var result;
-    const json = {
-                "id": selInterview,
-                "verdict": verdict
-            };
-    result = fetch("https://zsinterviews-60051110991.development.catalystserverless.in/server/zs_interviews_function/interview/"+selInterview+"", {
+    var json = { "id": selInterview };
+    if (typeof verdict !== 'undefined') json.verdict = verdict;
+    result = fetch(progressTracker.BASE_URL + "/interview/" + selInterview, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",
@@ -88,6 +108,31 @@ progressTracker.updateInterview = function(selInterview, verdict) {
         body: JSON.stringify(json),
     }).then(res => res.json());
   return result;
+}
+progressTracker.updateInterviewRemarks = function(textAreaElem) {
+    var interviewId = textAreaElem.getAttribute('data-interview-id') || '';
+    var remarks = textAreaElem.value || '';
+    if (!interviewId) return;
+
+    var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
+    for (var i = 0; i < interviewsCatData.length; i++) {
+        var entry = interviewsCatData[i];
+        var iv = entry.ZS28_Interviews || entry;
+        if (String(iv.ROWID) === String(interviewId)) {
+            iv.Remarks = remarks;
+            iv.remarks = remarks;
+            break;
+        }
+    }
+    localStorage.setItem('interviewsCatData', JSON.stringify(interviewsCatData));
+
+    fetch(progressTracker.BASE_URL + "/interview/" + interviewId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: interviewId, remarks: remarks, Remarks: remarks })
+    }).catch(function(error) {
+        console.error('Error updating remarks:', error);
+    });
 }
 progressTracker.goToConfigPage = function() {
     window.location.href = "interviewassign.html";
@@ -203,6 +248,7 @@ progressTracker.updateFinalResult = function(selectElem) {
 progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
+    var isDriveClosed = progressTracker.isDriveClosed();
     var tbody = document.querySelector('#progress-table tbody');
     if (!tbody) return;
 
@@ -231,6 +277,7 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
             var interviewId = interviewIds[j] || '';
             var facultyName = interviewId ? (interviews[interviewId] || '') : '';
             var verdict = 'In Progress';
+            var remarks = '';
 
             if (interviewId) {
                 var ivEntry = interviewsCatData.find(function(entry) {
@@ -244,6 +291,7 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
                     if (ivData.Verdict && ivData.Verdict !== '' && ivData.Verdict !== 'undefined') {
                         verdict = ivData.Verdict;
                     }
+                    remarks = ivData.Remarks || ivData.remarks || ivData.remark || '';
                 }
             }
 
@@ -258,7 +306,7 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
             var select = document.createElement('select');
             select.id = (interviewId || 'na') + '_' + studentName;
             select.setAttribute('onchange', 'progressTracker.updateColorCode(this)');
-            select.disabled = !facultyName || !interviewId || verdict !== 'In Progress';
+            select.disabled = isDriveClosed || !facultyName || !interviewId || verdict !== 'In Progress';
 
             ['In Progress', 'T', 'C+', 'C', 'S+', 'S'].forEach(function(v) {
                 var option = document.createElement('option');
@@ -270,11 +318,18 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
             verdictTd.appendChild(select);
             tr.appendChild(verdictTd);
 
-            if (j === 0) {
-                var placeholderResultTd = document.createElement('td');
-                placeholderResultTd.textContent = '--';
-                tr.appendChild(placeholderResultTd);
-            }
+            var remarksTd = document.createElement('td');
+            remarksTd.setAttribute('rel', 'appended');
+            var remarksTextArea = document.createElement('textarea');
+            remarksTextArea.value = remarks;
+            remarksTextArea.placeholder = 'Add remarks';
+            remarksTextArea.rows = 2;
+            remarksTextArea.style.minHeight = '56px';
+            remarksTextArea.disabled = isDriveClosed || !facultyName || !interviewId;
+            remarksTextArea.setAttribute('data-interview-id', interviewId);
+            remarksTextArea.setAttribute('onchange', 'progressTracker.updateInterviewRemarks(this)');
+            remarksTd.appendChild(remarksTextArea);
+            tr.appendChild(remarksTd);
 
             tbody.appendChild(tr);
         }
@@ -284,7 +339,7 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
         resultTr.classList.add('group-result-row');
 
         var resultLabelTd = document.createElement('td');
-        resultLabelTd.colSpan = 2;
+        resultLabelTd.colSpan = 3;
         resultLabelTd.className = 'group-result-label';
         resultLabelTd.textContent = 'Final Result';
         resultTr.appendChild(resultLabelTd);
