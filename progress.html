@@ -43,6 +43,23 @@
         width: 100%;
         border-collapse: collapse;
     }
+
+    .group-start td {
+        border-top: 2px solid #cbd5e1;
+    }
+
+    .group-result-row td {
+        background: #f8fafc;
+        border-top: 1px dashed #cbd5e1;
+        font-weight: 600;
+    }
+
+    .group-result-label {
+        color: #334155;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+    }
 </style>
 
 <script>
@@ -118,14 +135,9 @@
                 <table id="progress-table" role="table" aria-label="Interview progress table">
                     <thead>
                         <tr>
-                            <th class="header"> </th>
-                            <th class="header-span" id="addAfterTh" colspan="2">Faculty and Verdict</th>
-                            <th class="header"> </th>
-                        </tr>
-                        <tr>
                             <th>Student Name</th>
                             <th>Faculty Name</th>
-                            <th id="addAfterThSpan">Verdict</th>
+                            <th>Verdict</th>
                             <th>Final Result</th>
                         </tr>
                     </thead>
