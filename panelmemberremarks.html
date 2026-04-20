@@ -22,10 +22,6 @@
 </head>
 <body>
 <div class="container">
-    <button class="btn-secondary btn-small" type="button" onclick="window.location.href = 'progress.html'">
-        Back to Progress
-    </button>
-
     <div class="card" style="margin-top:1rem;">
         <h1 style="margin-bottom:1rem;">Panel Member Evaluation</h1>
 
@@ -76,6 +72,7 @@
     const state = {
         panelMemberId: "",
         panelMemberName: "",
+        facultyRowId: "",
         selectedStudentKey: "",
         selectedInterviewId: "",
         filteredInterviews: []
@@ -230,13 +227,11 @@
         var interviewId = document.getElementById("selectedInterviewId").value || "";
         var verdict = document.getElementById("verdictSelect").value || "";
         var remarks = document.getElementById("remarksText").value || "";
+        var studentRowId = studentKey.includes("_") ? studentKey.split("_").slice(1).join("_") : studentKey;
+        var recruitmentDriveId = localStorage.getItem("recruitmentDriveId") || "";
 
         if (!studentKey) {
             showStatus("error", "Please select a student first.");
-            return;
-        }
-        if (!interviewId) {
-            showStatus("error", "No interview record found for this student and panel member.");
             return;
         }
         if (!verdict) {
@@ -250,31 +245,59 @@
 
             var interviewsCatData = parseLS("interviewsCatData", []);
             var assignmentsData = parseLS("assignmentsData", {});
-
-            var res = await fetch(BASE_API + "/interview/" + interviewId, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: interviewId,
-                    verdict: verdict,
-                    remarks: remarks,
-                    Remarks: remarks
-                })
-            });
+            var res;
+            var persistedInterviewId = interviewId;
+            if (interviewId) {
+                res = await fetch(BASE_API + "/interview/" + interviewId, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: interviewId,
+                        verdict: verdict,
+                        remarks: remarks,
+                        Remarks: remarks
+                    })
+                });
+            } else {
+                // If interview row is missing, create it and include Remarks in POST payload.
+                res = await fetch(BASE_API + "/interview", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        student_id: studentRowId,
+                        faculty_id: state.facultyRowId,
+                        recruitment_drive_id: recruitmentDriveId,
+                        recruitment_date: new Date().toISOString().split("T")[0],
+                        is_school_head_interview: false,
+                        verdict: verdict,
+                        Remarks: remarks
+                    })
+                });
+            }
 
             if (!res.ok) throw new Error("Submit failed (HTTP " + res.status + ")");
+            var submitData = await res.json();
+            if (!persistedInterviewId && Array.isArray(submitData) && submitData[0]) {
+                var created = submitData[0].ZS28_Interviews || submitData[0];
+                persistedInterviewId = String(created.ROWID || "");
+                document.getElementById("selectedInterviewId").value = persistedInterviewId;
+                state.selectedInterviewId = persistedInterviewId;
+            }
 
             // Update localStorage (optimistic) so other pages can reflect changes.
             for (var i = 0; i < interviewsCatData.length; i++) {
                 var entry = interviewsCatData[i];
                 var iv = entry.ZS28_Interviews || entry;
                 var rowId = String(iv.ROWID || entry.ROWID || "");
-                if (rowId === String(interviewId)) {
+                if (rowId === String(persistedInterviewId)) {
                     iv.Verdict = verdict;
                     iv.Remarks = remarks;
                     iv.remarks = remarks;
                     break;
                 }
+            }
+            if (!interviewId && Array.isArray(submitData) && submitData[0]) {
+                interviewsCatData.push(submitData[0]);
             }
             localStorage.setItem("interviewsCatData", JSON.stringify(interviewsCatData));
 
@@ -320,6 +343,7 @@
             showStatus("error", "Could not resolve faculty ID for the panel member.");
             return;
         }
+        state.facultyRowId = facultyRowId;
 
         var recruitmentDriveId = localStorage.getItem("recruitmentDriveId") || "";
         if (!recruitmentDriveId) {
