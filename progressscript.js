@@ -248,7 +248,6 @@ progressTracker.updateFinalResult = function(selectElem) {
 progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
-    var isDriveClosed = progressTracker.isDriveClosed();
     var tbody = document.querySelector('#progress-table tbody');
     if (!tbody) return;
 
@@ -303,32 +302,25 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
 
             var verdictTd = document.createElement('td');
             verdictTd.setAttribute('rel', 'appended');
-            var select = document.createElement('select');
-            select.id = (interviewId || 'na') + '_' + studentName;
-            select.setAttribute('onchange', 'progressTracker.updateColorCode(this)');
-            select.disabled = isDriveClosed || !facultyName || !interviewId || verdict !== 'In Progress';
-
-            ['In Progress', 'T', 'C+', 'C', 'S+', 'S'].forEach(function(v) {
-                var option = document.createElement('option');
-                option.value = v;
-                option.textContent = v;
-                if (v === verdict) option.selected = true;
-                select.appendChild(option);
-            });
-            verdictTd.appendChild(select);
+            var verdictValue = verdict && verdict !== 'undefined' ? verdict : 'In Progress';
+            var verdictSpan = document.createElement('span');
+            verdictSpan.textContent = verdictValue;
+            verdictTd.appendChild(verdictSpan);
             tr.appendChild(verdictTd);
 
             var remarksTd = document.createElement('td');
             remarksTd.setAttribute('rel', 'appended');
-            var remarksTextArea = document.createElement('textarea');
-            remarksTextArea.value = remarks;
-            remarksTextArea.placeholder = 'Add remarks';
-            remarksTextArea.rows = 2;
-            remarksTextArea.style.minHeight = '56px';
-            remarksTextArea.disabled = isDriveClosed || !facultyName || !interviewId;
-            remarksTextArea.setAttribute('data-interview-id', interviewId);
-            remarksTextArea.setAttribute('onchange', 'progressTracker.updateInterviewRemarks(this)');
-            remarksTd.appendChild(remarksTextArea);
+            var remarksValue = '';
+            if (remarks && String(remarks).trim() !== '') {
+                remarksValue = remarks;
+            } else if (verdictValue !== 'In Progress') {
+                remarksValue = 'NA';
+            } else {
+                remarksValue = 'In Progress';
+            }
+            var remarksSpan = document.createElement('span');
+            remarksSpan.textContent = remarksValue;
+            remarksTd.appendChild(remarksSpan);
             tr.appendChild(remarksTd);
 
             tbody.appendChild(tr);
