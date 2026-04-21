@@ -72,11 +72,9 @@
             var assignmentsData = progressTracker.fetchData();
             dataToLoad = assignmentsData;
             if (!dataToLoad || Object.keys(dataToLoad).length === 0) return;
-            var firstKey = Object.keys(dataToLoad)[0];
-            const maxInterviews = Object.keys(dataToLoad[firstKey]).length;
             progressTracker.clearExistingDOM();
-            progressTracker.renderHeader(maxInterviews);
-            progressTracker.renderTableBasedOnData(dataToLoad, maxInterviews);
+            progressTracker.renderHeader();
+            progressTracker.renderTableBasedOnData(dataToLoad);
         } else {
             location.reload();
         }
