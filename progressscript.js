@@ -150,9 +150,9 @@ progressTracker.findHighestNumberOfInterviews = function(data) {
     return maxInterviews;
 }
 
-progressTracker.renderHeader = function(maxInterviews) {
+progressTracker.renderHeader = function() {
     // Header is static in grouped-row layout.
-    return maxInterviews;
+    return;
 }
 progressTracker.showCount = function() {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
@@ -245,7 +245,7 @@ progressTracker.updateFinalResult = function(selectElem) {
         }).catch(function(err) { console.error('Error creating result:', err); });
     }
 };
-progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
+progressTracker.renderTableBasedOnData = function(data) {
     var interviewsCatData = localStorage.getItem('interviewsCatData') ? JSON.parse(localStorage.getItem('interviewsCatData')) : [];
     var panelData = JSON.parse(localStorage.getItem('panelMembersCatData') || '[]');
     var tbody = document.querySelector('#progress-table tbody');
@@ -258,8 +258,14 @@ progressTracker.renderTableBasedOnData = function(data, maxInterviews) {
         var interviews = data[key] || {};
         var displayName = studentName.split('_')[0];
         var studentROWID = studentName.includes('_') ? studentName.split('_').slice(1).join('_') : '';
-        var interviewIds = Object.keys(interviews).filter(function(k) { return k !== 'remarks' && k !== 'remarksByPanel'; });
-        var reviewRowCount = Math.max(interviewIds.length, 1);
+        var interviewIds = Object.keys(interviews).filter(function(k) {
+            return k !== 'remarks' && k !== 'remarksByPanel' && interviews[k] && String(interviews[k]).trim() !== '';
+        });
+        var reviewRowCount = interviewIds.length;
+
+        // If no interviewer is assigned for this student yet, skip rendering
+        // review/result rows to avoid adding placeholder '--' rows.
+        if (reviewRowCount === 0) return;
 
         for (var j = 0; j < reviewRowCount; j++) {
             var tr = document.createElement('tr');
